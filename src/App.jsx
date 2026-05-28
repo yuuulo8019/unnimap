@@ -520,27 +520,25 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot }) {
     if (!containerRef.current) return;
 
     const initMap = () => {
-      window.kakao.maps.load(() => {
-        try {
-          const center = new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
-          mapRef.current = new window.kakao.maps.Map(containerRef.current, {
-            center,
-            level: 4,
-          });
-          setMapReady(true);
-        } catch (e) {
-          setMapError('지도 초기화 실패: ' + e.message);
-        }
-      });
+      try {
+        const center = new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
+        mapRef.current = new window.kakao.maps.Map(containerRef.current, {
+          center,
+          level: 4,
+        });
+        setMapReady(true);
+      } catch (e) {
+        setMapError('지도 초기화 실패: ' + e.message);
+      }
     };
 
-    if (window.kakao?.maps) {
+    if (window.kakao?.maps?.Map) {
       initMap();
       return;
     }
 
     const script = document.createElement('script');
-    script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=489bd3b776dd000de4ced50483b81295&autoload=false&libraries=services';
+    script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=489bd3b776dd000de4ced50483b81295&libraries=services';
     script.onload = initMap;
     script.onerror = () => setMapError('카카오맵 SDK를 불러오지 못했어요.\n잠시 후 새로고침 해주세요.');
     document.head.appendChild(script);
@@ -787,21 +785,24 @@ function PlaceSearch({ selected, onSelect }) {
   const search = () => {
     const q = keyword.trim();
     if (!q) return;
-    if (!window.kakao?.maps?.services) {
+    if (!window.kakao?.maps?.services?.Places) {
       setSearchStatus('error');
       return;
     }
     setSearchStatus('searching');
-    const ps = new window.kakao.maps.services.Places();
-    ps.keywordSearch(q, (data, stat) => {
-      if (stat === window.kakao.maps.services.Status.OK) {
-        setResults(data.slice(0, 6));
+    try {
+      const ps = new window.kakao.maps.services.Places();
+      ps.keywordSearch(q, (data, stat) => {
+        if (stat === window.kakao.maps.services.Status.OK) {
+          setResults(data.slice(0, 6));
+        } else {
+          setResults([]);
+        }
         setSearchStatus('done');
-      } else {
-        setResults([]);
-        setSearchStatus('done');
-      }
-    });
+      });
+    } catch (e) {
+      setSearchStatus('error');
+    }
   };
 
   if (selected) {
@@ -1088,8 +1089,9 @@ const s = {
   },
   myDot: {
     position: "absolute",
-    bottom: 100,
-    right: 16,
+    bottom: 16,
+    right: 80,
+    zIndex: 100,
     background: "#3742FA",
     color: "#fff",
     borderRadius: "50%",
@@ -1100,13 +1102,14 @@ const s = {
   },
   fab: {
     position: "absolute",
-    bottom: 100,
-    right: 60,
+    bottom: 16,
+    right: 16,
+    zIndex: 100,
     background: "linear-gradient(135deg, #FF6B9D, #FF8FB3)",
     color: "#fff",
     border: "none",
     borderRadius: 28,
-    padding: "10px 16px",
+    padding: "12px 18px",
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
