@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { supabase } from './supabase.js';
 
 // ─────────────────────────────────────────────
 // CONFIG
@@ -68,7 +69,8 @@ export default function UnniMapMobile() {
   const [view, setView] = useState("map"); // map | add | detail
   const [addStep, setAddStep] = useState(0);
   const [addData, setAddData] = useState(EMPTY_DATA);
-  const [spots, setSpots] = useState(MOCK_SPOTS);
+  const [spots, setSpots] = useState([]);
+  const [spotsLoading, setSpotsLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
   const [userLocation, setUserLocation] = useState(DEFAULT_CENTER);
   const [mapPanTo, setMapPanTo] = useState(null);
@@ -79,6 +81,18 @@ export default function UnniMapMobile() {
   const [masterPw, setMasterPw] = useState('');
   const tapCount = useRef(0);
   const tapTimer = useRef(null);
+
+  // Supabase에서 spots 불러오기
+  useEffect(() => {
+    supabase
+      .from('spots')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (!error && data) setSpots(data);
+        setSpotsLoading(false);
+      });
+  }, []);
 
   // 스플래시 + 위치 권한 요청 흐름
   useEffect(() => {
@@ -132,10 +146,14 @@ export default function UnniMapMobile() {
     return step - 1;
   };
 
-  const handleAddNext = () => {
+  const handleAddNext = async () => {
     if (addStep >= 7) {
+      const cycle = [4, 5, 6, 7, 8];
+      const idx = parseInt(localStorage.getItem('__um_i') || '0');
+      const reviews = isMaster ? cycle[idx] : 1;
+      if (isMaster) localStorage.setItem('__um_i', String((idx + 1) % cycle.length));
+
       const newSpot = {
-        id: spots.length + 1,
         name: addData.place?.name || "내가 추가한 장소",
         lat: addData.place?.lat,
         lng: addData.place?.lng,
@@ -143,19 +161,21 @@ export default function UnniMapMobile() {
         rating: addData.final,
         gender: addData.gender,
         stalls: addData.gender === "공용" ? null : addData.stalls,
-        access: addData.access,
+        access: addData.access || null,
         location: addData.location,
         clean: addData.clean,
         extras: addData.extras,
-        reviews: (() => {
-          if (!isMaster) return 1;
-          const cycle = [4,5,6,7,8];
-          const idx = parseInt(localStorage.getItem('__um_i') || '0');
-          localStorage.setItem('__um_i', String((idx + 1) % cycle.length));
-          return cycle[idx];
-        })(),
+        reviews,
       };
-      setSpots([...spots, newSpot]);
+
+      const { data, error } = await supabase
+        .from('spots')
+        .insert(newSpot)
+        .select()
+        .single();
+
+      if (!error && data) setSpots(prev => [data, ...prev]);
+
       setView("done");
       setAddStep(0);
       setAddData(EMPTY_DATA);
@@ -327,6 +347,11 @@ export default function UnniMapMobile() {
 
         {/* 지도 영역 */}
         <div style={s.mapArea}>
+          {spotsLoading && (
+            <div style={{ position:'absolute', top:12, left:'50%', transform:'translateX(-50%)', background:'rgba(255,107,157,0.9)', color:'#fff', borderRadius:20, padding:'6px 16px', fontSize:12, fontWeight:700, zIndex:200 }}>
+              화장실 정보 불러오는 중...
+            </div>
+          )}
           <KakaoMap
             spots={filteredSpots}
             userLocation={userLocation}
