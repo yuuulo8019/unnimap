@@ -511,17 +511,26 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot }) {
   const overlaysRef = useRef([]);
   const userMarkerRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
+  const [mapError, setMapError] = useState(null);
 
   // 지도 초기화 (한 번만 실행)
   useEffect(() => {
-    if (!containerRef.current || !window.kakao) return;
+    if (!containerRef.current) return;
+    if (!window.kakao || !window.kakao.maps) {
+      setMapError('카카오맵 SDK를 불러오지 못했어요.\n잠시 후 새로고침 해주세요.');
+      return;
+    }
     window.kakao.maps.load(() => {
-      const center = new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
-      mapRef.current = new window.kakao.maps.Map(containerRef.current, {
-        center,
-        level: 4,
-      });
-      setMapReady(true);
+      try {
+        const center = new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
+        mapRef.current = new window.kakao.maps.Map(containerRef.current, {
+          center,
+          level: 4,
+        });
+        setMapReady(true);
+      } catch (e) {
+        setMapError('지도를 초기화하지 못했어요: ' + e.message);
+      }
     });
   }, []);
 
@@ -579,7 +588,16 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot }) {
     });
   }, [mapReady, spots, selected]);
 
-  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
+  if (mapError) {
+    return (
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#FFF5F8', gap: 10, padding: 24, textAlign: 'center' }}>
+        <div style={{ fontSize: 36 }}>🗺️</div>
+        <div style={{ fontSize: 13, color: '#FF6B9D', fontWeight: 700, whiteSpace: 'pre-line' }}>{mapError}</div>
+      </div>
+    );
+  }
+
+  return <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />;
 }
 
 // ─────────────────────────────────────────────
