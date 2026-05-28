@@ -83,6 +83,11 @@ export default function UnniMapMobile() {
   const [mapPanTo, setMapPanTo] = useState(null);
   const [searchDropdown, setSearchDropdown] = useState([]);
   const [showDrop, setShowDrop] = useState(false);
+  const [isMaster, setIsMaster] = useState(() => localStorage.getItem('__um') === '1');
+  const [showMasterLogin, setShowMasterLogin] = useState(false);
+  const [masterPw, setMasterPw] = useState('');
+  const tapCount = useRef(0);
+  const tapTimer = useRef(null);
 
   // 스플래시 + 위치 권한 요청 흐름
   useEffect(() => {
@@ -148,7 +153,7 @@ export default function UnniMapMobile() {
         location: addData.location,
         clean: addData.clean,
         extras: addData.extras,
-        reviews: 1,
+        reviews: isMaster ? 5 : 1,
       };
       setSpots([...spots, newSpot]);
       setView("done");
@@ -173,6 +178,26 @@ export default function UnniMapMobile() {
     setSheetState("half");
   };
 
+  const handleLogoTap = () => {
+    tapCount.current += 1;
+    clearTimeout(tapTimer.current);
+    tapTimer.current = setTimeout(() => { tapCount.current = 0; }, 2000);
+    if (tapCount.current >= 6) {
+      tapCount.current = 0;
+      setShowMasterLogin(true);
+    }
+  };
+
+  const handleMasterLogin = () => {
+    const key = [48,54,50,48].map(c => String.fromCharCode(c)).join('');
+    if (masterPw === key) {
+      localStorage.setItem('__um', '1');
+      setIsMaster(true);
+      setShowMasterLogin(false);
+    }
+    setMasterPw('');
+  };
+
   const handleMapSearch = () => {
     if (!searchText.trim() || !window.kakao?.maps?.services?.Places) return;
     const ps = new window.kakao.maps.services.Places();
@@ -189,6 +214,26 @@ export default function UnniMapMobile() {
 
   return (
     <div style={s.app}>
+      {/* 마스터 로그인 (비공개) */}
+      {showMasterLogin && (
+        <div style={s.masterOverlay} onClick={() => { setShowMasterLogin(false); setMasterPw(''); }}>
+          <div style={s.masterModal} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 28, marginBottom: 4 }}>🔐</div>
+            <input
+              style={s.masterInput}
+              type="password"
+              inputMode="numeric"
+              value={masterPw}
+              onChange={e => setMasterPw(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleMasterLogin()}
+              placeholder="••••"
+              autoFocus
+            />
+            <button style={s.masterBtn} onClick={handleMasterLogin}>확인</button>
+          </div>
+        </div>
+      )}
+
       {/* 위치 권한 모달 */}
       {showLocationAsk && (
         <LocationModal onGrant={handleLocationGrant} onDeny={handleLocationDeny} />
@@ -223,9 +268,15 @@ export default function UnniMapMobile() {
       }}>
         {/* 상단 검색바 */}
         <div style={{ ...s.topBar, position: "relative" }}>
-          <div style={s.logo}>
+          <div style={s.logo} onClick={handleLogoTap}>
             <span style={{ fontSize: 18 }}>🚻</span>
             <span style={s.logoText}>언니맵</span>
+            {isMaster && (
+              <span
+                style={s.masterBadge}
+                onClick={e => { e.stopPropagation(); localStorage.removeItem('__um'); setIsMaster(false); }}
+              >👑</span>
+            )}
           </div>
           <div style={s.searchWrap}>
             <span style={{ fontSize: 14, opacity: 0.5 }}>🔍</span>
@@ -1530,6 +1581,28 @@ const s = {
     fontSize: 16, fontWeight: 800,
     cursor: "pointer",
     width: "100%",
+  },
+
+  // MASTER
+  masterBadge: { fontSize: 13, marginLeft: 3, cursor: 'pointer' },
+  masterOverlay: {
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000,
+  },
+  masterModal: {
+    background: '#fff', borderRadius: 20, padding: '24px 20px',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, width: 180,
+  },
+  masterInput: {
+    width: '100%', border: '2px solid #FFE0EC', borderRadius: 12,
+    padding: '10px 0', fontSize: 22, textAlign: 'center',
+    outline: 'none', letterSpacing: 8,
+    fontFamily: "'Noto Sans KR', sans-serif",
+  },
+  masterBtn: {
+    background: 'linear-gradient(135deg, #FF6B9D, #FF8FB3)', color: '#fff',
+    border: 'none', borderRadius: 12, padding: '10px 0',
+    fontSize: 14, fontWeight: 700, cursor: 'pointer', width: '100%',
   },
 
   // TOP SEARCH DROPDOWN
