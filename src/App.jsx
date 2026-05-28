@@ -520,25 +520,27 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot }) {
     if (!containerRef.current) return;
 
     const initMap = () => {
-      try {
-        const center = new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
-        mapRef.current = new window.kakao.maps.Map(containerRef.current, {
-          center,
-          level: 4,
-        });
-        setMapReady(true);
-      } catch (e) {
-        setMapError('지도 초기화 실패: ' + e.message);
-      }
+      window.kakao.maps.load(() => {
+        try {
+          const center = new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
+          mapRef.current = new window.kakao.maps.Map(containerRef.current, {
+            center,
+            level: 4,
+          });
+          setMapReady(true);
+        } catch (e) {
+          setMapError('지도 초기화 실패: ' + e.message);
+        }
+      });
     };
 
-    if (window.kakao?.maps?.Map) {
+    if (window.kakao?.maps?.load) {
       initMap();
       return;
     }
 
     const script = document.createElement('script');
-    script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=489bd3b776dd000de4ced50483b81295&libraries=services';
+    script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=489bd3b776dd000de4ced50483b81295&autoload=false&libraries=services';
     script.onload = initMap;
     script.onerror = () => setMapError('카카오맵 SDK를 불러오지 못했어요.\n잠시 후 새로고침 해주세요.');
     document.head.appendChild(script);
