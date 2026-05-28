@@ -80,6 +80,9 @@ export default function UnniMapMobile() {
   const [spots, setSpots] = useState(MOCK_SPOTS);
   const [searchText, setSearchText] = useState("");
   const [userLocation, setUserLocation] = useState(DEFAULT_CENTER);
+  const [mapPanTo, setMapPanTo] = useState(null);
+  const [searchDropdown, setSearchDropdown] = useState([]);
+  const [showDrop, setShowDrop] = useState(false);
 
   // 스플래시 + 위치 권한 요청 흐름
   useEffect(() => {
@@ -170,6 +173,17 @@ export default function UnniMapMobile() {
     setSheetState("half");
   };
 
+  const handleMapSearch = () => {
+    if (!searchText.trim() || !window.kakao?.maps?.services?.Places) return;
+    const ps = new window.kakao.maps.services.Places();
+    ps.keywordSearch(searchText, (data, status) => {
+      if (status === window.kakao.maps.services.Status.OK) {
+        setSearchDropdown(data.slice(0, 5));
+        setShowDrop(true);
+      }
+    });
+  };
+
   // 화면 상태 분기
   if (showSplash) return <Splash />;
 
@@ -185,7 +199,7 @@ export default function UnniMapMobile() {
         <InstallBanner onClose={() => setShowInstallBanner(false)} />
       )}
 
-      {/* ===== ADD VIEW (전체화면) ===== */}
+      {/* ===== ADD / DONE VIEW (전체화면 오버레이) ===== */}
       {view === "add" && (
         <AddScreen
           step={addStep}
@@ -195,99 +209,121 @@ export default function UnniMapMobile() {
           onBack={handleAddBack}
         />
       )}
-
-      {/* ===== DONE VIEW (등록 완료) ===== */}
       {view === "done" && (
         <DoneScreen onBack={() => setView("map")} />
       )}
 
-      {/* ===== MAP VIEW (메인) ===== */}
-      {view === "map" && (
-        <>
-          {/* 상단 검색바 */}
-          <div style={s.topBar}>
-            <div style={s.logo}>
-              <span style={{ fontSize: 18 }}>🚻</span>
-              <span style={s.logoText}>언니맵</span>
-            </div>
-            <div style={s.searchWrap}>
-              <span style={{ fontSize: 14, opacity: 0.5 }}>🔍</span>
-              <input
-                style={s.searchInput}
-                placeholder="장소, 지역 검색..."
-                value={searchText}
-                onChange={e => setSearchText(e.target.value)}
-              />
-            </div>
+      {/* ===== MAP VIEW — display:none으로 숨겨도 KakaoMap 마운트 유지 ===== */}
+      <div style={{
+        display: view === "map" ? "flex" : "none",
+        flexDirection: "column",
+        flex: 1,
+        overflow: "hidden",
+        minHeight: 0,
+      }}>
+        {/* 상단 검색바 */}
+        <div style={{ ...s.topBar, position: "relative" }}>
+          <div style={s.logo}>
+            <span style={{ fontSize: 18 }}>🚻</span>
+            <span style={s.logoText}>언니맵</span>
           </div>
-
-          {/* 필터 칩 */}
-          <div style={s.filterRow}>
-            {[["all","전체"], ["best","여기로 와!"], ["good","써도 돼"], ["mid","급하면..."], ["bad","전 가게 ㄱㄱ"]].map(([key, label]) => (
-              <button
-                key={key}
-                style={{ ...s.chip, ...(filter === key ? s.chipActive : {}) }}
-                onClick={() => setFilter(key)}
-              >{label}</button>
-            ))}
-          </div>
-
-          {/* 지도 영역 (전체) */}
-          <div style={s.mapArea}>
-            <KakaoMap
-              spots={filteredSpots}
-              userLocation={userLocation}
-              selected={selected}
-              onSelectSpot={selectSpot}
+          <div style={s.searchWrap}>
+            <span style={{ fontSize: 14, opacity: 0.5 }}>🔍</span>
+            <input
+              style={s.searchInput}
+              placeholder="장소명으로 검색 후 Enter"
+              value={searchText}
+              onChange={e => { setSearchText(e.target.value); setShowDrop(false); }}
+              onKeyDown={e => e.key === 'Enter' && handleMapSearch()}
             />
-            {/* 정보 올리기 플로팅 버튼 */}
-            <button style={s.fab} onClick={() => { setView("add"); setAddStep(0); setAddData(EMPTY_DATA); }}>
-              <span style={{ fontSize: 20 }}>+</span>
-              <span style={{ fontSize: 12, fontWeight: 800 }}>정보 올리기</span>
-            </button>
+            {searchText && (
+              <button style={s.searchClearBtn} onClick={() => { setSearchText(""); setShowDrop(false); setSearchDropdown([]); }}>✕</button>
+            )}
           </div>
 
-          {/* 바텀시트 */}
-          {selected && sheetState !== "collapsed" && (
-            <BottomSheet
-              spot={selected}
-              sheetState={sheetState}
-              setSheetState={setSheetState}
-              onClose={() => { setSelected(null); setSheetState("collapsed"); }}
-            />
-          )}
-
-          {/* 하단 미니 카드 (시트가 닫혔을 때) */}
-          {!selected && (
-            <div style={s.miniList}>
-              <div style={s.miniListTitle}>👩 내 주변 화장실 {filteredSpots.length}곳</div>
-              <div style={s.miniListScroll}>
-                {filteredSpots.slice(0, 5).map(spot => {
-                  const cfg = RATING_CONFIG[spot.rating];
-                  const hasEnough = spot.reviews >= MIN_REVIEWS_FOR_RATING;
-                  return (
-                    <button
-                      key={spot.id}
-                      style={s.miniCard}
-                      onClick={() => selectSpot(spot)}
-                    >
-                      {hasEnough ? (
-                        <div style={{ ...s.miniCardBadge, background: cfg.bg, color: cfg.color }}>
-                          {cfg.emoji} {cfg.short}
-                        </div>
-                      ) : (
-                        <div style={s.miniCardBadgePending}>👩 {spot.reviews}명</div>
-                      )}
-                      <div style={s.miniCardName}>{spot.name}</div>
-                      <div style={s.miniCardCat}>{spot.category}</div>
-                    </button>
-                  );
-                })}
-              </div>
+          {/* 카카오 장소 검색 드롭다운 */}
+          {showDrop && searchDropdown.length > 0 && (
+            <div style={s.searchDrop}>
+              {searchDropdown.map(r => (
+                <button
+                  key={r.id}
+                  style={s.searchDropItem}
+                  onClick={() => {
+                    setMapPanTo({ lat: parseFloat(r.y), lng: parseFloat(r.x) });
+                    setSearchText(r.place_name);
+                    setShowDrop(false);
+                  }}
+                >
+                  <div style={s.searchDropName}>{r.place_name}</div>
+                  <div style={s.searchDropAddr}>{r.road_address_name || r.address_name}</div>
+                </button>
+              ))}
             </div>
           )}
-        </>
-      )}
+        </div>
+
+        {/* 필터 칩 */}
+        <div style={s.filterRow}>
+          {[["all","전체"], ["best","여기로 와!"], ["good","써도 돼"], ["mid","급하면..."], ["bad","전 가게 ㄱㄱ"]].map(([key, label]) => (
+            <button
+              key={key}
+              style={{ ...s.chip, ...(filter === key ? s.chipActive : {}) }}
+              onClick={() => setFilter(key)}
+            >{label}</button>
+          ))}
+        </div>
+
+        {/* 지도 영역 */}
+        <div style={s.mapArea}>
+          <KakaoMap
+            spots={filteredSpots}
+            userLocation={userLocation}
+            selected={selected}
+            onSelectSpot={selectSpot}
+            panTo={mapPanTo}
+          />
+          <button style={s.fab} onClick={() => { setView("add"); setAddStep(0); setAddData(EMPTY_DATA); }}>
+            <span style={{ fontSize: 20 }}>+</span>
+            <span style={{ fontSize: 12, fontWeight: 800 }}>정보 올리기</span>
+          </button>
+        </div>
+
+        {/* 바텀시트 */}
+        {selected && sheetState !== "collapsed" && (
+          <BottomSheet
+            spot={selected}
+            sheetState={sheetState}
+            setSheetState={setSheetState}
+            onClose={() => { setSelected(null); setSheetState("collapsed"); }}
+          />
+        )}
+
+        {/* 하단 미니 카드 */}
+        {!selected && (
+          <div style={s.miniList}>
+            <div style={s.miniListTitle}>👩 내 주변 화장실 {filteredSpots.length}곳</div>
+            <div style={s.miniListScroll}>
+              {filteredSpots.slice(0, 5).map(spot => {
+                const cfg = RATING_CONFIG[spot.rating];
+                const hasEnough = spot.reviews >= MIN_REVIEWS_FOR_RATING;
+                return (
+                  <button key={spot.id} style={s.miniCard} onClick={() => selectSpot(spot)}>
+                    {hasEnough ? (
+                      <div style={{ ...s.miniCardBadge, background: cfg.bg, color: cfg.color }}>
+                        {cfg.emoji} {cfg.short}
+                      </div>
+                    ) : (
+                      <div style={s.miniCardBadgePending}>👩 {spot.reviews}명</div>
+                    )}
+                    <div style={s.miniCardName}>{spot.name}</div>
+                    <div style={s.miniCardCat}>{spot.category}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -507,7 +543,7 @@ function InfoBox({ icon, value }) {
 // KAKAO MAP
 // ─────────────────────────────────────────────
 
-function KakaoMap({ spots, userLocation, selected, onSelectSpot }) {
+function KakaoMap({ spots, userLocation, selected, onSelectSpot, panTo }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const overlaysRef = useRef([]);
@@ -545,6 +581,12 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot }) {
     script.onerror = () => setMapError('카카오맵 SDK를 불러오지 못했어요.\n잠시 후 새로고침 해주세요.');
     document.head.appendChild(script);
   }, []);
+
+  // 검색으로 지도 이동
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !panTo) return;
+    mapRef.current.panTo(new window.kakao.maps.LatLng(panTo.lat, panTo.lng));
+  }, [mapReady, panTo]);
 
   // 내 위치 마커 업데이트
   useEffect(() => {
@@ -1489,6 +1531,26 @@ const s = {
     cursor: "pointer",
     width: "100%",
   },
+
+  // TOP SEARCH DROPDOWN
+  searchClearBtn: {
+    background: 'none', border: 'none', color: '#ccc',
+    fontSize: 14, cursor: 'pointer', padding: '0 2px', flexShrink: 0,
+  },
+  searchDrop: {
+    position: 'absolute', top: '100%', left: 0, right: 0,
+    background: '#fff', border: '1px solid #FFE0EC', borderTop: 'none',
+    borderRadius: '0 0 16px 16px',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 200,
+    maxHeight: 260, overflowY: 'auto',
+  },
+  searchDropItem: {
+    width: '100%', background: 'none', border: 'none',
+    borderBottom: '1px solid #FFF5F8',
+    padding: '12px 16px', textAlign: 'left', cursor: 'pointer',
+  },
+  searchDropName: { fontSize: 14, fontWeight: 700, color: '#222', marginBottom: 2 },
+  searchDropAddr: { fontSize: 12, color: '#aaa' },
 
   // PLACE SEARCH
   placeSearchBar: { display: 'flex', gap: 8, marginBottom: 12 },
