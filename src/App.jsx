@@ -144,7 +144,13 @@ export default function UnniMapMobile() {
         location: addData.location,
         clean: addData.clean,
         extras: addData.extras,
-        reviews: isMaster ? 5 : 1,
+        reviews: (() => {
+          if (!isMaster) return 1;
+          const cycle = [4,5,6,7,8];
+          const idx = parseInt(localStorage.getItem('__um_i') || '0');
+          localStorage.setItem('__um_i', String((idx + 1) % cycle.length));
+          return cycle[idx];
+        })(),
       };
       setSpots([...spots, newSpot]);
       setView("done");
