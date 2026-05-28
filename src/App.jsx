@@ -203,10 +203,10 @@ export default function UnniMapMobile() {
     const ps = new window.kakao.maps.services.Places();
     ps.keywordSearch(searchText, (data, status) => {
       if (status === window.kakao.maps.services.Status.OK) {
-        setSearchDropdown(data.slice(0, 5));
+        setSearchDropdown(data.slice(0, 10));
         setShowDrop(true);
       }
-    });
+    }, { size: 10 });
   };
 
   // 화면 상태 분기
@@ -279,17 +279,18 @@ export default function UnniMapMobile() {
             )}
           </div>
           <div style={s.searchWrap}>
-            <span style={{ fontSize: 14, opacity: 0.5 }}>🔍</span>
             <input
               style={s.searchInput}
-              placeholder="장소명으로 검색 후 Enter"
+              placeholder="장소명 검색..."
               value={searchText}
               onChange={e => { setSearchText(e.target.value); setShowDrop(false); }}
               onKeyDown={e => e.key === 'Enter' && handleMapSearch()}
             />
-            {searchText && (
-              <button style={s.searchClearBtn} onClick={() => { setSearchText(""); setShowDrop(false); setSearchDropdown([]); }}>✕</button>
-            )}
+            {searchText
+              ? <button style={s.searchClearBtn} onClick={() => { setSearchText(""); setShowDrop(false); setSearchDropdown([]); }}>✕</button>
+              : null
+            }
+            <button style={s.searchGoBtn} onClick={handleMapSearch}>🔍</button>
           </div>
 
           {/* 카카오 장소 검색 드롭다운 */}
@@ -891,12 +892,12 @@ function PlaceSearch({ selected, onSelect }) {
       const ps = new window.kakao.maps.services.Places();
       ps.keywordSearch(q, (data, stat) => {
         if (stat === window.kakao.maps.services.Status.OK) {
-          setResults(data.slice(0, 6));
+          setResults(data.slice(0, 10));
         } else {
           setResults([]);
         }
         setSearchStatus('done');
-      });
+      }, { size: 10 });
     } catch (e) {
       setSearchStatus('error');
     }
@@ -1611,6 +1612,10 @@ const s = {
   searchClearBtn: {
     background: 'none', border: 'none', color: '#ccc',
     fontSize: 14, cursor: 'pointer', padding: '0 2px', flexShrink: 0,
+  },
+  searchGoBtn: {
+    background: 'none', border: 'none', color: '#FF6B9D',
+    fontSize: 16, cursor: 'pointer', padding: '0 2px', flexShrink: 0,
   },
   searchDrop: {
     position: 'absolute', top: '100%', left: 0, right: 0,
