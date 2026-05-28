@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF6B9D"/>
+      <stop offset="50%" stop-color="#FF8FB3"/>
+      <stop offset="100%" stop-color="#FFB3CC"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- 배경 (둥근 사각형) -->
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#bgGrad)"/>
+  
+  <!-- 중앙 화이트 원 -->
+  <circle cx="256" cy="220" r="100" fill="rgba(255,255,255,0.95)"/>
+  
+  <!-- 화장실 이모지 위치에 텍스트로 표현 -->
+  <text x="256" y="256" 
+        font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif" 
+        font-size="120" 
+        text-anchor="middle" 
+        dominant-baseline="middle">🚻</text>
+  
+  <!-- 하단 텍스트 -->
+  <text x="256" y="400" 
+        font-family="Apple SD Gothic Neo, Noto Sans KR, sans-serif" 
+        font-size="72" 
+        font-weight="900"
+        fill="#fff"
+        text-anchor="middle"
+        letter-spacing="-2">언니맵</text>
+</svg>
