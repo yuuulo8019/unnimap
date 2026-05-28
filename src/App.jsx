@@ -49,16 +49,7 @@ const MIN_REVIEWS_FOR_RATING = 3;
 // 홍대 좌표 (위치 거부 시 기본값)
 const DEFAULT_CENTER = { lat: 37.5563, lng: 126.9236 };
 
-const MOCK_SPOTS = [
-  { id: 1, name: "스타벅스 홍대점",      lat: 37.5565, lng: 126.9242, category: "카페",       rating: "best", gender: "분리", stalls: "여러칸", access: "개방",     location: "매장내부", clean: "깨", reviews: 24, extras: ["soap", "tissue", "dryer", "mirror"] },
-  { id: 2, name: "올리브영 신촌점",      lat: 37.5554, lng: 126.9370, category: "편의점",     rating: "mid",  gender: "공용", stalls: null,    access: "비밀번호", location: "매장내부", clean: "에", reviews: 11, extras: ["soap"] },
-  { id: 3, name: "홍대 걷고싶은거리",    lat: 37.5540, lng: 126.9228, category: "공공화장실", rating: "bad",  gender: "분리", stalls: "여러칸", access: "개방",     location: "건물외부", clean: "읏", reviews: 38, extras: [] },
-  { id: 4, name: "CGV 홍대점",          lat: 37.5578, lng: 126.9249, category: "영화관",     rating: "good", gender: "분리", stalls: "여러칸", access: "개방",     location: "매장내부", clean: "애", reviews: 57, extras: ["soap", "tissue", "dryer", "mirror", "powder", "gargle"] },
-  { id: 5, name: "맥도날드 합정점",      lat: 37.5498, lng: 126.9050, category: "패스트푸드", rating: "mid",  gender: "공용", stalls: null,    access: "열쇠",     location: "매장내부", clean: "끄", reviews: 19, extras: ["soap", "tissue"] },
-  { id: 6, name: "이마트 홍대점",        lat: 37.5581, lng: 126.9258, category: "마트",       rating: "best", gender: "분리", stalls: "여러칸", access: "개방",     location: "매장내부", clean: "깨", reviews: 42, extras: ["soap", "tissue", "bidet", "dryer", "mirror", "powder"] },
-  { id: 7, name: "홍대 공원 화장실",     lat: 37.5532, lng: 126.9215, category: "공공화장실", rating: "bad",  gender: "분리", stalls: "여러칸", access: "개방",     location: "건물외부", clean: "읏", reviews: 61, extras: [] },
-  { id: 8, name: "투썸플레이스 연남점",  lat: 37.5587, lng: 126.9200, category: "카페",       rating: "good", gender: "공용", stalls: null,    access: "비밀번호", location: "매장내부", clean: "애", reviews: 2,  extras: ["soap", "tissue", "mirror"] },
-];
+const MOCK_SPOTS = [];
 
 
 const EMPTY_DATA = { place: null, gender: "", stalls: "", access: "", location: "", clean: "", final: "", extras: [] };
