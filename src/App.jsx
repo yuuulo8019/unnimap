@@ -50,26 +50,16 @@ const MIN_REVIEWS_FOR_RATING = 3;
 const DEFAULT_CENTER = { lat: 37.5563, lng: 126.9236 };
 
 const MOCK_SPOTS = [
-  { id: 1, name: "스타벅스 홍대점",      category: "카페",       rating: "best", gender: "분리", stalls: "여러칸", access: "개방",     location: "매장내부", clean: "깨", reviews: 24, extras: ["soap", "tissue", "dryer", "mirror"] },
-  { id: 2, name: "올리브영 신촌점",      category: "편의점",     rating: "mid",  gender: "공용", stalls: null,    access: "비밀번호", location: "매장내부", clean: "에", reviews: 11, extras: ["soap"] },
-  { id: 3, name: "홍대 걷고싶은거리",    category: "공공화장실", rating: "bad",  gender: "분리", stalls: "여러칸", access: "개방",     location: "건물외부", clean: "읏", reviews: 38, extras: [] },
-  { id: 4, name: "CGV 홍대점",          category: "영화관",     rating: "good", gender: "분리", stalls: "여러칸", access: "개방",     location: "매장내부", clean: "애", reviews: 57, extras: ["soap", "tissue", "dryer", "mirror", "powder", "gargle"] },
-  { id: 5, name: "맥도날드 합정점",      category: "패스트푸드", rating: "mid",  gender: "공용", stalls: null,    access: "열쇠",     location: "매장내부", clean: "끄", reviews: 19, extras: ["soap", "tissue"] },
-  { id: 6, name: "이마트 홍대점",        category: "마트",       rating: "best", gender: "분리", stalls: "여러칸", access: "개방",     location: "매장내부", clean: "깨", reviews: 42, extras: ["soap", "tissue", "bidet", "dryer", "mirror", "powder"] },
-  { id: 7, name: "홍대 공원 화장실",     category: "공공화장실", rating: "bad",  gender: "분리", stalls: "여러칸", access: "개방",     location: "건물외부", clean: "읏", reviews: 61, extras: [] },
-  { id: 8, name: "투썸플레이스 연남점",  category: "카페",       rating: "good", gender: "공용", stalls: null,    access: "비밀번호", location: "매장내부", clean: "애", reviews: 2,  extras: ["soap", "tissue", "mirror"] },
+  { id: 1, name: "스타벅스 홍대점",      lat: 37.5565, lng: 126.9242, category: "카페",       rating: "best", gender: "분리", stalls: "여러칸", access: "개방",     location: "매장내부", clean: "깨", reviews: 24, extras: ["soap", "tissue", "dryer", "mirror"] },
+  { id: 2, name: "올리브영 신촌점",      lat: 37.5554, lng: 126.9370, category: "편의점",     rating: "mid",  gender: "공용", stalls: null,    access: "비밀번호", location: "매장내부", clean: "에", reviews: 11, extras: ["soap"] },
+  { id: 3, name: "홍대 걷고싶은거리",    lat: 37.5540, lng: 126.9228, category: "공공화장실", rating: "bad",  gender: "분리", stalls: "여러칸", access: "개방",     location: "건물외부", clean: "읏", reviews: 38, extras: [] },
+  { id: 4, name: "CGV 홍대점",          lat: 37.5578, lng: 126.9249, category: "영화관",     rating: "good", gender: "분리", stalls: "여러칸", access: "개방",     location: "매장내부", clean: "애", reviews: 57, extras: ["soap", "tissue", "dryer", "mirror", "powder", "gargle"] },
+  { id: 5, name: "맥도날드 합정점",      lat: 37.5498, lng: 126.9050, category: "패스트푸드", rating: "mid",  gender: "공용", stalls: null,    access: "열쇠",     location: "매장내부", clean: "끄", reviews: 19, extras: ["soap", "tissue"] },
+  { id: 6, name: "이마트 홍대점",        lat: 37.5581, lng: 126.9258, category: "마트",       rating: "best", gender: "분리", stalls: "여러칸", access: "개방",     location: "매장내부", clean: "깨", reviews: 42, extras: ["soap", "tissue", "bidet", "dryer", "mirror", "powder"] },
+  { id: 7, name: "홍대 공원 화장실",     lat: 37.5532, lng: 126.9215, category: "공공화장실", rating: "bad",  gender: "분리", stalls: "여러칸", access: "개방",     location: "건물외부", clean: "읏", reviews: 61, extras: [] },
+  { id: 8, name: "투썸플레이스 연남점",  lat: 37.5587, lng: 126.9200, category: "카페",       rating: "good", gender: "공용", stalls: null,    access: "비밀번호", location: "매장내부", clean: "애", reviews: 2,  extras: ["soap", "tissue", "mirror"] },
 ];
 
-const PIN_POSITIONS = {
-  1: { top: "30%", left: "45%" },
-  2: { top: "20%", left: "70%" },
-  3: { top: "55%", left: "28%" },
-  4: { top: "40%", left: "55%" },
-  5: { top: "65%", left: "20%" },
-  6: { top: "48%", left: "78%" },
-  7: { top: "72%", left: "50%" },
-  8: { top: "28%", left: "22%" },
-};
 
 const EMPTY_DATA = { gender: "", stalls: "", access: "", location: "", clean: "", final: "", extras: [] };
 
@@ -242,44 +232,12 @@ export default function UnniMapMobile() {
 
           {/* 지도 영역 (전체) */}
           <div style={s.mapArea}>
-            <div style={s.mapBg}>
-              <div style={{ ...s.road, top: "35%", left: 0, right: 0, height: 3 }} />
-              <div style={{ ...s.road, top: "60%", left: 0, right: 0, height: 2, opacity: 0.4 }} />
-              <div style={{ ...s.road, left: "40%", top: 0, bottom: 0, width: 3 }} />
-              <div style={{ ...s.road, left: "65%", top: 0, bottom: 0, width: 2, opacity: 0.4 }} />
-              <div style={s.mapLabel}>홍대입구</div>
-
-              {filteredSpots.map(spot => {
-                const cfg = RATING_CONFIG[spot.rating];
-                const hasEnough = spot.reviews >= MIN_REVIEWS_FOR_RATING;
-                const pos = PIN_POSITIONS[spot.id] || { top: "50%", left: "50%" };
-                const isSelected = selected?.id === spot.id;
-                const pinColor = hasEnough ? cfg.pinBg : "#CCCCCC";
-                const pinEmoji = hasEnough ? cfg.emoji : "❓";
-
-                return (
-                  <button
-                    key={spot.id}
-                    onClick={() => selectSpot(spot)}
-                    style={{
-                      ...s.pin,
-                      ...pos,
-                      background: pinColor,
-                      transform: `translate(-50%, -50%) scale(${isSelected ? 1.3 : 1})`,
-                      zIndex: isSelected ? 10 : 1,
-                      boxShadow: isSelected
-                        ? `0 0 0 4px ${pinColor}44, 0 4px 16px rgba(0,0,0,0.2)`
-                        : "0 3px 10px rgba(0,0,0,0.15)",
-                    }}
-                  >
-                    {pinEmoji}
-                  </button>
-                );
-              })}
-
-              <div style={s.myDot}>📍</div>
-            </div>
-
+            <KakaoMap
+              spots={filteredSpots}
+              userLocation={userLocation}
+              selected={selected}
+              onSelectSpot={selectSpot}
+            />
             {/* 정보 올리기 플로팅 버튼 */}
             <button style={s.fab} onClick={() => { setView("add"); setAddStep(0); setAddData(EMPTY_DATA); }}>
               <span style={{ fontSize: 20 }}>+</span>
@@ -541,6 +499,87 @@ function InfoBox({ icon, value }) {
       <div style={s.infoValue}>{value}</div>
     </div>
   );
+}
+
+// ─────────────────────────────────────────────
+// KAKAO MAP
+// ─────────────────────────────────────────────
+
+function KakaoMap({ spots, userLocation, selected, onSelectSpot }) {
+  const containerRef = useRef(null);
+  const mapRef = useRef(null);
+  const overlaysRef = useRef([]);
+  const userMarkerRef = useRef(null);
+  const [mapReady, setMapReady] = useState(false);
+
+  // 지도 초기화 (한 번만 실행)
+  useEffect(() => {
+    if (!containerRef.current || !window.kakao) return;
+    window.kakao.maps.load(() => {
+      const center = new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
+      mapRef.current = new window.kakao.maps.Map(containerRef.current, {
+        center,
+        level: 4,
+      });
+      setMapReady(true);
+    });
+  }, []);
+
+  // 내 위치 마커 업데이트
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    const pos = new window.kakao.maps.LatLng(userLocation.lat, userLocation.lng);
+    if (userLocation.lat !== DEFAULT_CENTER.lat || userLocation.lng !== DEFAULT_CENTER.lng) {
+      mapRef.current.panTo(pos);
+    }
+    if (userMarkerRef.current) userMarkerRef.current.setMap(null);
+    const el = document.createElement('div');
+    el.style.cssText = 'width:14px;height:14px;background:#3742FA;border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(55,66,250,0.4);transform:translate(-50%,-50%)';
+    userMarkerRef.current = new window.kakao.maps.CustomOverlay({ position: pos, content: el, zIndex: 5 });
+    userMarkerRef.current.setMap(mapRef.current);
+  }, [mapReady, userLocation]);
+
+  // 화장실 핀 업데이트
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    overlaysRef.current.forEach(o => o.setMap(null));
+    overlaysRef.current = [];
+
+    spots.forEach(spot => {
+      if (!spot.lat || !spot.lng) return;
+      const cfg = RATING_CONFIG[spot.rating];
+      const hasEnough = spot.reviews >= MIN_REVIEWS_FOR_RATING;
+      const pinColor = hasEnough ? cfg.pinBg : '#CCCCCC';
+      const pinEmoji = hasEnough ? cfg.emoji : '❓';
+      const isSelected = selected?.id === spot.id;
+      const size = isSelected ? 48 : 38;
+
+      const el = document.createElement('div');
+      el.style.cssText = [
+        `width:${size}px`, `height:${size}px`,
+        `background:${pinColor}`,
+        'border-radius:50%', 'border:3px solid #fff',
+        `font-size:${isSelected ? 20 : 16}px`,
+        'display:flex', 'align-items:center', 'justify-content:center',
+        'cursor:pointer',
+        `box-shadow:${isSelected ? `0 0 0 4px ${pinColor}44,0 4px 16px rgba(0,0,0,0.2)` : '0 3px 10px rgba(0,0,0,0.15)'}`,
+        'transform:translate(-50%,-50%)',
+        'transition:all 0.2s',
+      ].join(';');
+      el.textContent = pinEmoji;
+      el.addEventListener('click', (e) => { e.stopPropagation(); onSelectSpot(spot); });
+
+      const overlay = new window.kakao.maps.CustomOverlay({
+        position: new window.kakao.maps.LatLng(spot.lat, spot.lng),
+        content: el,
+        zIndex: isSelected ? 10 : 1,
+      });
+      overlay.setMap(mapRef.current);
+      overlaysRef.current.push(overlay);
+    });
+  }, [mapReady, spots, selected]);
+
+  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
 }
 
 // ─────────────────────────────────────────────
