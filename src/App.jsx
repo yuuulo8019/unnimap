@@ -61,7 +61,7 @@ const MOCK_SPOTS = [
 ];
 
 
-const EMPTY_DATA = { gender: "", stalls: "", access: "", location: "", clean: "", final: "", extras: [] };
+const EMPTY_DATA = { place: null, gender: "", stalls: "", access: "", location: "", clean: "", final: "", extras: [] };
 
 // ─────────────────────────────────────────────
 // MAIN
@@ -122,20 +122,22 @@ export default function UnniMapMobile() {
 
   // 등록 흐름 분기 (공용이면 칸수 스킵)
   const getNextStep = (step, data) => {
-    if (step === 0 && data.gender === "공용") return 2;
+    if (step === 1 && data.gender === "공용") return 3;
     return step + 1;
   };
   const getPrevStep = (step, data) => {
-    if (step === 2 && data.gender === "공용") return 0;
+    if (step === 3 && data.gender === "공용") return 1;
     return step - 1;
   };
 
   const handleAddNext = () => {
-    if (addStep >= 6) {
+    if (addStep >= 7) {
       const newSpot = {
         id: spots.length + 1,
-        name: "내가 추가한 장소",
-        category: "직접추가",
+        name: addData.place?.name || "내가 추가한 장소",
+        lat: addData.place?.lat,
+        lng: addData.place?.lng,
+        category: addData.place?.category || "직접추가",
         rating: addData.final,
         gender: addData.gender,
         stalls: addData.gender === "공용" ? null : addData.stalls,
@@ -538,7 +540,7 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot }) {
     }
 
     const script = document.createElement('script');
-    script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=489bd3b776dd000de4ced50483b81295&autoload=false';
+    script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=489bd3b776dd000de4ced50483b81295&autoload=false&libraries=services';
     script.onload = initMap;
     script.onerror = () => setMapError('카카오맵 SDK를 불러오지 못했어요.\n잠시 후 새로고침 해주세요.');
     document.head.appendChild(script);
@@ -616,11 +618,12 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot }) {
 
 function AddScreen({ step, data, setData, onNext, onBack }) {
   const isPublic = data.gender === "공용";
-  const totalSteps = isPublic ? 6 : 7;
+  const totalSteps = isPublic ? 7 : 8;
   let displayStep = step;
-  if (isPublic && step >= 2) displayStep = step - 1;
+  if (isPublic && step >= 3) displayStep = step - 1;
 
   const stepConfig = [
+    { title: "어디 화장실이야?", sub: "장소를 검색해서 선택해줘", key: "place", isPlaceSearch: true },
     { title: "언니! 여기 화장실은?", sub: "", options: [
       { value: "분리", label: "👨👩 남녀 분리", desc: "\"여자랑 남자 따로 있어\"" },
       { value: "공용", label: "🚻 남녀 공용", desc: "\"같이 써\"" },
@@ -652,7 +655,7 @@ function AddScreen({ step, data, setData, onNext, onBack }) {
   const cur = stepConfig[step];
   const progress = (displayStep + 1) / totalSteps * 100;
   const sel = cur.isMulti ? null : data[cur.key];
-  const canProceed = cur.isMulti ? true : !!sel;
+  const canProceed = cur.isPlaceSearch ? !!data.place : cur.isMulti ? true : !!sel;
 
   const toggleExtra = (key) => {
     const extras = data.extras || [];
@@ -676,6 +679,13 @@ function AddScreen({ step, data, setData, onNext, onBack }) {
       <div style={s.addBody}>
         <div style={s.addTitle}>{cur.title}</div>
         {cur.sub && <div style={s.addSub}>{cur.sub}</div>}
+
+        {cur.isPlaceSearch && (
+          <PlaceSearch
+            selected={data.place}
+            onSelect={(place) => setData({ ...data, place })}
+          />
+        )}
 
         {cur.isCleanSlider && (
           <CleanSliderPicker
@@ -703,7 +713,7 @@ function AddScreen({ step, data, setData, onNext, onBack }) {
           </div>
         )}
 
-        {!cur.isMulti && !cur.isCleanSlider && (
+        {!cur.isMulti && !cur.isCleanSlider && !cur.isPlaceSearch && (
           <div style={s.optList}>
             {cur.options.map(opt => (
               <button
@@ -761,6 +771,95 @@ function CleanSliderPicker({ value, onChange }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// PLACE SEARCH
+// ─────────────────────────────────────────────
+
+function PlaceSearch({ selected, onSelect }) {
+  const [keyword, setKeyword] = useState('');
+  const [results, setResults] = useState([]);
+  const [searchStatus, setSearchStatus] = useState('idle'); // idle | searching | done | error
+
+  const search = () => {
+    const q = keyword.trim();
+    if (!q) return;
+    if (!window.kakao?.maps?.services) {
+      setSearchStatus('error');
+      return;
+    }
+    setSearchStatus('searching');
+    const ps = new window.kakao.maps.services.Places();
+    ps.keywordSearch(q, (data, stat) => {
+      if (stat === window.kakao.maps.services.Status.OK) {
+        setResults(data.slice(0, 6));
+        setSearchStatus('done');
+      } else {
+        setResults([]);
+        setSearchStatus('done');
+      }
+    });
+  };
+
+  if (selected) {
+    return (
+      <div style={s.placeSelected}>
+        <div style={{ fontSize: 28 }}>✅</div>
+        <div style={s.placeSelectedInfo}>
+          <div style={s.placeSelectedName}>{selected.name}</div>
+          <div style={s.placeSelectedAddr}>{selected.address}</div>
+        </div>
+        <button style={s.placeResetBtn} onClick={() => { onSelect(null); setResults([]); setSearchStatus('idle'); }}>
+          변경
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={s.placeSearchBar}>
+        <input
+          style={s.placeInput}
+          value={keyword}
+          onChange={e => setKeyword(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && search()}
+          placeholder="예: 스타벅스 홍대점, 올리브영..."
+          autoFocus
+        />
+        <button style={s.placeSearchBtn} onClick={search}>검색</button>
+      </div>
+
+      {searchStatus === 'searching' && <div style={s.placeMsg}>🔍 검색 중...</div>}
+      {searchStatus === 'done' && results.length === 0 && <div style={s.placeMsg}>검색 결과가 없어요 😢<br/>다른 이름으로 검색해봐요!</div>}
+      {searchStatus === 'error' && <div style={s.placeMsg}>지도가 아직 로딩 중이에요.<br/>잠깐 후 다시 시도해봐요!</div>}
+
+      {results.length > 0 && (
+        <div style={s.placeResults}>
+          {results.map(r => (
+            <button
+              key={r.id}
+              style={s.placeResultItem}
+              onClick={() => onSelect({
+                name: r.place_name,
+                lat: parseFloat(r.y),
+                lng: parseFloat(r.x),
+                address: r.road_address_name || r.address_name,
+                category: r.category_group_name || '기타',
+              })}
+            >
+              <div style={s.placeResultName}>{r.place_name}</div>
+              <div style={s.placeResultAddr}>{r.road_address_name || r.address_name}</div>
+              {r.category_group_name && (
+                <span style={s.placeResultCat}>{r.category_group_name}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1384,6 +1483,47 @@ const s = {
     fontSize: 16, fontWeight: 800,
     cursor: "pointer",
     width: "100%",
+  },
+
+  // PLACE SEARCH
+  placeSearchBar: { display: 'flex', gap: 8, marginBottom: 12 },
+  placeInput: {
+    flex: 1, border: '2px solid #FFE0EC', borderRadius: 12,
+    padding: '12px 14px', fontSize: 14, outline: 'none',
+    fontFamily: "'Noto Sans KR', sans-serif", color: '#333',
+  },
+  placeSearchBtn: {
+    background: 'linear-gradient(135deg, #FF6B9D, #FF8FB3)',
+    color: '#fff', border: 'none', borderRadius: 12,
+    padding: '12px 16px', fontSize: 14, fontWeight: 700,
+    cursor: 'pointer', whiteSpace: 'nowrap',
+  },
+  placeMsg: {
+    textAlign: 'center', color: '#bbb', fontSize: 13,
+    padding: '24px 0', lineHeight: 1.7,
+  },
+  placeResults: { display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 20 },
+  placeResultItem: {
+    border: '2px solid #FFE0EC', borderRadius: 14, padding: '14px 16px',
+    background: '#fff', textAlign: 'left', cursor: 'pointer', width: '100%',
+  },
+  placeResultName: { fontSize: 15, fontWeight: 800, color: '#222', marginBottom: 3 },
+  placeResultAddr: { fontSize: 12, color: '#999', marginBottom: 4 },
+  placeResultCat: {
+    fontSize: 11, color: '#FF6B9D', background: '#FFF0F5',
+    borderRadius: 6, padding: '2px 7px', fontWeight: 700,
+  },
+  placeSelected: {
+    border: '2px solid #FF6B9D', borderRadius: 14, padding: '16px',
+    background: '#FFF0F5', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8,
+  },
+  placeSelectedInfo: { flex: 1, minWidth: 0 },
+  placeSelectedName: { fontSize: 15, fontWeight: 800, color: '#FF6B9D', marginBottom: 3 },
+  placeSelectedAddr: { fontSize: 12, color: '#FF8FB3' },
+  placeResetBtn: {
+    background: 'none', border: '1.5px solid #FFE0EC', borderRadius: 8,
+    padding: '6px 12px', fontSize: 12, fontWeight: 700,
+    color: '#FF6B9D', cursor: 'pointer', flexShrink: 0,
   },
 
   // DONE
