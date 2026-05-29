@@ -133,7 +133,8 @@ export default function UnniMapMobile() {
   const handleLocationDeny = () => setShowLocationAsk(false);
 
   const filteredSpots = spots.filter(spot => {
-    const hasEnoughReviews = spot.reviews >= MIN_REVIEWS_FOR_RATING;
+    const reviews = typeof spot.reviews === 'string' ? parseInt(spot.reviews) : spot.reviews;
+    const hasEnoughReviews = reviews >= MIN_REVIEWS_FOR_RATING;
     const matchFilter = filter === "all" || (hasEnoughReviews && spot.rating === filter);
     const matchSearch = spot.name.includes(searchText) || spot.category.includes(searchText);
     return matchFilter && matchSearch;
@@ -754,13 +755,19 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot, onMapClick, con
     document.head.appendChild(script);
   }, []);
 
-  // controlRef로 pan 메서드 노출 — stale closure 없이 직접 호출 가능
+  // controlRef로 pan 메서드 노출
   useEffect(() => {
     if (!mapReady || !mapRef.current || !controlRef) return;
     controlRef.current = {
       panTo: (lat, lng) => mapRef.current?.panTo(new window.kakao.maps.LatLng(lat, lng)),
     };
   }, [mapReady, controlRef]);
+
+  // selected 변경 시 지도 center로 이동
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !selected) return;
+    mapRef.current.panTo(new window.kakao.maps.LatLng(selected.lat, selected.lng));
+  }, [mapReady, selected]);
 
   // 내 위치 마커 업데이트
   useEffect(() => {
@@ -785,7 +792,8 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot, onMapClick, con
     spots.forEach(spot => {
       if (!spot.lat || !spot.lng) return;
       const cfg = RATING_CONFIG[spot.rating];
-      const hasEnough = spot.reviews >= MIN_REVIEWS_FOR_RATING;
+      const reviews = typeof spot.reviews === 'string' ? parseInt(spot.reviews) : spot.reviews;
+      const hasEnough = reviews >= MIN_REVIEWS_FOR_RATING;
       const pinColor = hasEnough ? cfg.pinBg : '#CCCCCC';
       const pinEmoji = hasEnough ? cfg.emoji : '❓';
       const isSelected = selected?.id === spot.id;
@@ -804,7 +812,10 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot, onMapClick, con
         'transition:all 0.2s',
       ].join(';');
       el.textContent = pinEmoji;
-      el.addEventListener('click', (e) => { e.stopPropagation(); onSelectSpot(spot); });
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onSelectSpot(spot);
+      });
 
       const overlay = new window.kakao.maps.CustomOverlay({
         position: new window.kakao.maps.LatLng(spot.lat, spot.lng),
@@ -1455,7 +1466,7 @@ const s = {
     borderRadius: "50%",
     width: 28, height: 28,
     fontSize: 12, cursor: "pointer", color: "#999",
-    zIndex: 11,
+    zIndex: 301,
     display: "flex", alignItems: "center", justifyContent: "center",
   },
   sheetContent: {
