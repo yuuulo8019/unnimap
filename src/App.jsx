@@ -854,9 +854,9 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot, onMapClick, con
   useEffect(() => {
     if (!mapReady || !mapRef.current || !selected) return;
     mapRef.current.setCenter(new window.kakao.maps.LatLng(selected.lat, selected.lng));
-    // 바텀시트가 화면 55%를 차지하므로, 위쪽으로 오프셋 이동
+    // 바텀시트가 화면 55%를 차지하므로, 핀을 위쪽으로 이동
     const offset = window.innerHeight * 0.25;
-    mapRef.current.panBy(0, -offset);
+    mapRef.current.panBy(0, offset);
   }, [mapReady, selected]);
 
   // 내 위치 마커 업데이트
