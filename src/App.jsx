@@ -53,7 +53,7 @@ const DEFAULT_CENTER = { lat: 37.5563, lng: 126.9236 };
 const MOCK_SPOTS = [];
 
 
-const EMPTY_DATA = { place: null, gender: "", stalls: "", access: "", location: "", clean: "", final: "", extras: [] };
+const EMPTY_DATA = { place: null, kakao_place_id: null, gender: "", stalls: "", access: "", location: "", clean: "", final: "", extras: [] };
 
 // ─────────────────────────────────────────────
 // MAIN
@@ -155,33 +155,75 @@ export default function UnniMapMobile() {
 
   const handleAddNext = async () => {
     if (addStep >= 7) {
-      const cycle = [4, 5, 6, 7, 8];
-      const idx = parseInt(localStorage.getItem('__um_i') || '0');
-      const reviews = isMaster ? cycle[idx] : 1;
-      if (isMaster) localStorage.setItem('__um_i', String((idx + 1) % cycle.length));
+      if (!addData.kakao_place_id) {
+        alert("장소를 선택해주세요!");
+        return;
+      }
 
-      const newSpot = {
-        name: addData.place?.name || "내가 추가한 장소",
-        lat: addData.place?.lat,
-        lng: addData.place?.lng,
-        category: addData.place?.category || "직접추가",
-        rating: addData.final,
-        gender: addData.gender,
-        stalls: addData.gender === "공용" ? null : addData.stalls,
-        access: addData.access || null,
-        location: addData.location,
-        clean: addData.clean,
-        extras: addData.extras,
-        reviews,
-      };
-
-      const { data, error } = await supabase
+      // kakao_place_id로 기존 평가 확인
+      const { data: existing } = await supabase
         .from('spots')
-        .insert(newSpot)
-        .select()
+        .select('id, reviews')
+        .eq('kakao_place_id', addData.kakao_place_id)
         .single();
 
-      if (!error && data) setSpots(prev => [data, ...prev]);
+      if (existing) {
+        // 기존 장소: reviews +1, 최신 평가로 업데이트
+        const newReviews = (parseInt(existing.reviews) || 0) + 1;
+        const { data, error } = await supabase
+          .from('spots')
+          .update({
+            reviews: newReviews,
+            clean: addData.clean,
+            rating: addData.final,
+          })
+          .eq('id', existing.id)
+          .select()
+          .single();
+
+        if (error) {
+          alert("평가 추가 실패: " + error.message);
+          return;
+        }
+        if (data) {
+          setSpots(prev => prev.map(s => s.id === existing.id ? data : s));
+          setSelected(data);
+        }
+      } else {
+        // 신규 장소 등록
+        const cycle = [4, 5, 6, 7, 8];
+        const idx = parseInt(localStorage.getItem('__um_i') || '0');
+        const reviews = isMaster ? cycle[idx] : 1;
+        if (isMaster) localStorage.setItem('__um_i', String((idx + 1) % cycle.length));
+
+        const newSpot = {
+          name: addData.place?.name || "내가 추가한 장소",
+          lat: addData.place?.lat,
+          lng: addData.place?.lng,
+          category: addData.place?.category || "직접추가",
+          rating: addData.final,
+          gender: addData.gender,
+          stalls: addData.gender === "공용" ? null : addData.stalls,
+          access: addData.access || null,
+          location: addData.location,
+          clean: addData.clean,
+          extras: addData.extras,
+          kakao_place_id: addData.kakao_place_id,
+          reviews,
+        };
+
+        const { data, error } = await supabase
+          .from('spots')
+          .insert(newSpot)
+          .select()
+          .single();
+
+        if (error) {
+          alert("등록 실패: " + error.message);
+          return;
+        }
+        if (data) setSpots(prev => [data, ...prev]);
+      }
 
       setView("done");
       setAddStep(0);
@@ -388,6 +430,7 @@ export default function UnniMapMobile() {
                   onClick={() => {
                     setAddData({
                       ...EMPTY_DATA,
+                      kakao_place_id: r.id,
                       place: {
                         name: r.place_name,
                         lat: parseFloat(r.y),
