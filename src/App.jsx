@@ -234,10 +234,15 @@ export default function UnniMapMobile() {
 
   const kakaoSearch = (term, onResult) => {
     if (!term.trim() || !window.kakao?.maps?.services?.Places) return;
+    // 전국 bounds 명시 → 지도 뷰포트가 검색 범위를 제한하는 현상 방지
+    const koreaBounds = new window.kakao.maps.LatLngBounds(
+      new window.kakao.maps.LatLng(33.0, 124.6),
+      new window.kakao.maps.LatLng(38.6, 131.9)
+    );
     const ps = new window.kakao.maps.services.Places();
     ps.keywordSearch(term, (data, status) => {
       if (status === window.kakao.maps.services.Status.OK) onResult(data.slice(0, 10));
-    }, { size: 10, sort: window.kakao.maps.services.SortBy.ACCURACY });
+    }, { size: 10, bounds: koreaBounds });
   };
 
   const handleMapSearch = () => {
