@@ -565,7 +565,8 @@ function InstallBanner({ onClose, onInstall }) {
 
 function BottomSheet({ spot, sheetState, setSheetState, onClose }) {
   const cfg = RATING_CONFIG[spot.rating];
-  const hasEnough = spot.reviews >= MIN_REVIEWS_FOR_RATING;
+  const reviews = typeof spot.reviews === 'string' ? parseInt(spot.reviews) : (spot.reviews || 0);
+  const hasEnough = reviews >= MIN_REVIEWS_FOR_RATING;
   const g = genderDisplay(spot.gender, spot.stalls);
   const loc = LOCATION_LABELS[spot.location];
   const [menuOpen, setMenuOpen] = useState(false);
@@ -662,7 +663,7 @@ function BottomSheet({ spot, sheetState, setSheetState, onClose }) {
             </>
           )}
 
-          <div style={s.reviewCount}>👩 {spot.reviews}명의 언니가 평가했어요</div>
+          <div style={s.reviewCount}>👩 {reviews}명의 언니가 평가했어요</div>
         </div>
       </div>
     </div>
@@ -790,9 +791,10 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot, onMapClick, con
     overlaysRef.current = [];
 
     spots.forEach(spot => {
-      if (!spot.lat || !spot.lng) return;
+      if (!spot.lat || !spot.lng || !spot.rating) return;
       const cfg = RATING_CONFIG[spot.rating];
-      const reviews = typeof spot.reviews === 'string' ? parseInt(spot.reviews) : spot.reviews;
+      if (!cfg) return;
+      const reviews = typeof spot.reviews === 'string' ? parseInt(spot.reviews) : (spot.reviews || 0);
       const hasEnough = reviews >= MIN_REVIEWS_FOR_RATING;
       const pinColor = hasEnough ? cfg.pinBg : '#CCCCCC';
       const pinEmoji = hasEnough ? cfg.emoji : '❓';
