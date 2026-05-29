@@ -853,7 +853,7 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot, onMapClick, con
   // selected 변경 시 지도 center로 이동
   useEffect(() => {
     if (!mapReady || !mapRef.current || !selected) return;
-    mapRef.current.panTo(new window.kakao.maps.LatLng(selected.lat, selected.lng));
+    mapRef.current.setCenter(new window.kakao.maps.LatLng(selected.lat, selected.lng));
   }, [mapReady, selected]);
 
   // 내 위치 마커 업데이트
