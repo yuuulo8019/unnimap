@@ -81,6 +81,7 @@ export default function UnniMapMobile() {
   const [masterPw, setMasterPw] = useState('');
   const tapCount = useRef(0);
   const tapTimer = useRef(null);
+  const installPrompt = useRef(null);
 
   // Supabase에서 spots 불러오기
   useEffect(() => {
@@ -103,12 +104,16 @@ export default function UnniMapMobile() {
     return () => clearTimeout(t);
   }, []);
 
-  // 홈 화면 추가 안내 (한 번만 표시)
+  // 홈 화면 추가 — beforeinstallprompt 이벤트가 올 때만 배너 표시
   useEffect(() => {
-    if (showSplash || showLocationAsk) return;
-    const t = setTimeout(() => setShowInstallBanner(true), 5000);
-    return () => clearTimeout(t);
-  }, [showSplash, showLocationAsk]);
+    const handler = (e) => {
+      e.preventDefault();
+      installPrompt.current = e;
+      setShowInstallBanner(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
 
   const handleLocationGrant = () => {
     if (navigator.geolocation) {
@@ -198,6 +203,15 @@ export default function UnniMapMobile() {
     setSheetState("half");
   };
 
+  const handleInstall = async () => {
+    if (installPrompt.current) {
+      installPrompt.current.prompt();
+      await installPrompt.current.userChoice;
+      installPrompt.current = null;
+    }
+    setShowInstallBanner(false);
+  };
+
   const handleLogoTap = () => {
     tapCount.current += 1;
     clearTimeout(tapTimer.current);
@@ -261,7 +275,10 @@ export default function UnniMapMobile() {
 
       {/* 홈 화면 추가 배너 */}
       {showInstallBanner && view === "map" && (
-        <InstallBanner onClose={() => setShowInstallBanner(false)} />
+        <InstallBanner
+          onClose={() => setShowInstallBanner(false)}
+          onInstall={handleInstall}
+        />
       )}
 
       {/* ===== ADD / DONE VIEW (전체화면 오버레이) ===== */}
@@ -321,8 +338,19 @@ export default function UnniMapMobile() {
                   key={r.id}
                   style={s.searchDropItem}
                   onClick={() => {
-                    setMapPanTo({ lat: parseFloat(r.y), lng: parseFloat(r.x) });
-                    setSearchText(r.place_name);
+                    setAddData({
+                      ...EMPTY_DATA,
+                      place: {
+                        name: r.place_name,
+                        lat: parseFloat(r.y),
+                        lng: parseFloat(r.x),
+                        address: r.road_address_name || r.address_name,
+                        category: r.category_group_name || '기타',
+                      }
+                    });
+                    setAddStep(1);
+                    setView("add");
+                    setSearchText('');
                     setShowDrop(false);
                   }}
                 >
@@ -453,15 +481,15 @@ function LocationModal({ onGrant, onDeny }) {
 // INSTALL BANNER
 // ─────────────────────────────────────────────
 
-function InstallBanner({ onClose }) {
+function InstallBanner({ onClose, onInstall }) {
   return (
-    <div style={s.installBanner}>
-      <div style={s.installEmoji}>🌸</div>
+    <div style={s.installBanner} onClick={onInstall}>
+      <div style={s.installEmoji}>📲</div>
       <div style={s.installText}>
-        <div style={s.installTitle}>홈 화면에 추가해봐!</div>
-        <div style={s.installSub}>앱처럼 빠르게 쓸 수 있어요</div>
+        <div style={s.installTitle}>홈 화면에 추가하기</div>
+        <div style={s.installSub}>탭하면 앱으로 설치돼요</div>
       </div>
-      <button style={s.installClose} onClick={onClose}>✕</button>
+      <button style={s.installClose} onClick={e => { e.stopPropagation(); onClose(); }}>✕</button>
     </div>
   );
 }
@@ -1094,20 +1122,21 @@ const s = {
   // INSTALL BANNER
   installBanner: {
     position: "fixed",
-    top: 8,
+    bottom: 90,
     left: "50%",
     transform: "translateX(-50%)",
-    width: "calc(100% - 16px)",
-    maxWidth: 460,
+    width: "calc(100% - 32px)",
+    maxWidth: 420,
     background: "linear-gradient(135deg, #FF6B9D, #FFB3CC)",
     color: "#fff",
-    borderRadius: 14,
-    padding: "10px 14px",
+    borderRadius: 16,
+    padding: "12px 16px",
     display: "flex",
     alignItems: "center",
     gap: 12,
-    boxShadow: "0 4px 14px rgba(255,107,157,0.3)",
+    boxShadow: "0 4px 20px rgba(255,107,157,0.4)",
     zIndex: 500,
+    cursor: "pointer",
   },
   installEmoji: { fontSize: 24 },
   installText: { flex: 1 },
