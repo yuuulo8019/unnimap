@@ -74,7 +74,6 @@ export default function UnniMapMobile() {
   const [spotsLoading, setSpotsLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
   const [userLocation, setUserLocation] = useState(DEFAULT_CENTER);
-  const [mapPanTo, setMapPanTo] = useState(null);
   const [searchDropdown, setSearchDropdown] = useState([]);
   const [showDrop, setShowDrop] = useState(false);
   const [isMaster, setIsMaster] = useState(() => localStorage.getItem('__um') === '1');
@@ -83,6 +82,7 @@ export default function UnniMapMobile() {
   const tapCount = useRef(0);
   const tapTimer = useRef(null);
   const installPrompt = useRef(null);
+  const mapControl = useRef(null); // KakaoMap 직접 제어용
 
   // Supabase에서 spots 불러오기
   useEffect(() => {
@@ -212,7 +212,7 @@ export default function UnniMapMobile() {
     setSelected(spot);
     setSheetState("half");
     setNoInfoPos(null);
-    if (spot.lat && spot.lng) setMapPanTo({ lat: spot.lat, lng: spot.lng });
+    if (spot.lat && spot.lng) mapControl.current?.panTo(spot.lat, spot.lng);
   };
 
   const handleMapClick = ({ lat, lng }) => {
@@ -348,6 +348,7 @@ export default function UnniMapMobile() {
         flex: 1,
         overflow: "hidden",
         minHeight: 0,
+        position: "relative",
       }}>
         {/* 상단 검색바 */}
         <div style={{ ...s.topBar, position: "relative", zIndex: 300 }}>
@@ -431,8 +432,8 @@ export default function UnniMapMobile() {
             userLocation={userLocation}
             selected={selected}
             onSelectSpot={selectSpot}
-            panTo={mapPanTo}
             onMapClick={handleMapClick}
+            controlRef={mapControl}
           />
           <button style={s.fab} onClick={() => { setView("add"); setAddStep(0); setAddData(EMPTY_DATA); }}>
             <span style={{ fontSize: 20 }}>+</span>
@@ -577,7 +578,7 @@ function BottomSheet({ spot, sheetState, setSheetState, onClose }) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const heightMap = { collapsed: "0", half: "55vh", full: "92vh" };
+  const heightMap = { collapsed: "0", half: "55vh", full: "calc(100% - 8px)" };
   const isFull = sheetState === "full";
 
   return (
@@ -711,7 +712,7 @@ function InfoBox({ icon, value }) {
 // KAKAO MAP
 // ─────────────────────────────────────────────
 
-function KakaoMap({ spots, userLocation, selected, onSelectSpot, panTo, onMapClick }) {
+function KakaoMap({ spots, userLocation, selected, onSelectSpot, onMapClick, controlRef }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const overlaysRef = useRef([]);
@@ -753,11 +754,13 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot, panTo, onMapCli
     document.head.appendChild(script);
   }, []);
 
-  // 검색으로 지도 이동
+  // controlRef로 pan 메서드 노출 — stale closure 없이 직접 호출 가능
   useEffect(() => {
-    if (!mapReady || !mapRef.current || !panTo) return;
-    mapRef.current.panTo(new window.kakao.maps.LatLng(panTo.lat, panTo.lng));
-  }, [mapReady, panTo]);
+    if (!mapReady || !mapRef.current || !controlRef) return;
+    controlRef.current = {
+      panTo: (lat, lng) => mapRef.current?.panTo(new window.kakao.maps.LatLng(lat, lng)),
+    };
+  }, [mapReady, controlRef]);
 
   // 내 위치 마커 업데이트
   useEffect(() => {
