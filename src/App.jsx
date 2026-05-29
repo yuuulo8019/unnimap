@@ -508,6 +508,28 @@ export default function UnniMapMobile() {
             sheetState={sheetState}
             setSheetState={setSheetState}
             onClose={() => { setSelected(null); setSheetState("collapsed"); }}
+            onAddReview={() => {
+              setAddData({
+                place: {
+                  name: selected.name,
+                  lat: selected.lat,
+                  lng: selected.lng,
+                  category: selected.category,
+                },
+                kakao_place_id: selected.kakao_place_id,
+                gender: selected.gender,
+                stalls: selected.stalls || "",
+                access: selected.access || "",
+                location: selected.location,
+                clean: "",
+                final: "",
+                extras: [],
+              });
+              setAddStep(2);
+              setView("add");
+              setSelected(null);
+              setSheetState("collapsed");
+            }}
           />
         )}
 
@@ -607,7 +629,7 @@ function InstallBanner({ onClose, onInstall }) {
 // BOTTOM SHEET (DETAIL)
 // ─────────────────────────────────────────────
 
-function BottomSheet({ spot, sheetState, setSheetState, onClose }) {
+function BottomSheet({ spot, sheetState, setSheetState, onClose, onAddReview }) {
   const cfg = RATING_CONFIG[spot.rating];
   const reviews = typeof spot.reviews === 'string' ? parseInt(spot.reviews) : (spot.reviews || 0);
   const hasEnough = reviews >= MIN_REVIEWS_FOR_RATING;
@@ -672,6 +694,26 @@ function BottomSheet({ spot, sheetState, setSheetState, onClose }) {
           <div style={s.sheetName}>{spot.name}</div>
           <div style={s.sheetCat}>{spot.category}</div>
         </div>
+
+        {/* 평가 버튼 */}
+        <button
+          onClick={onAddReview}
+          style={{
+            width: "calc(100% - 32px)",
+            margin: "12px 16px",
+            padding: "10px 16px",
+            border: "2px solid #FF6B9D",
+            background: "transparent",
+            color: "#FF6B9D",
+            fontSize: 14,
+            fontWeight: 600,
+            borderRadius: 8,
+            cursor: "pointer",
+            fontFamily: "inherit",
+          }}
+        >
+          언니도 평가할래? 💕
+        </button>
 
         <div style={s.sheetBody}>
           {!hasEnough && (
