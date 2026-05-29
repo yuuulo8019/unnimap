@@ -693,30 +693,29 @@ function BottomSheet({ spot, sheetState, setSheetState, onClose, onAddReview }) 
           )}
           <div style={s.sheetName}>{spot.name}</div>
           <div style={s.sheetCat}>{spot.category}</div>
+        </div>
 
+        <div style={s.sheetBody}>
           {/* 평가 버튼 */}
           <button
             onClick={onAddReview}
             style={{
-              width: "calc(100% - 48px)",
-              marginTop: 12,
-              marginBottom: 12,
-              padding: "10px 16px",
+              width: "100%",
+              padding: "12px 16px",
+              marginBottom: 16,
               border: "2px solid #FF6B9D",
               background: "transparent",
               color: "#FF6B9D",
-              fontSize: 14,
-              fontWeight: 600,
+              fontSize: 15,
+              fontWeight: 700,
               borderRadius: 8,
               cursor: "pointer",
               fontFamily: "inherit",
+              boxSizing: "border-box",
             }}
           >
             언니도 평가할래? 💕
           </button>
-        </div>
-
-        <div style={s.sheetBody}>
           {!hasEnough && (
             <div style={s.pendingNote}>
               💡 평가가 {MIN_REVIEWS_FOR_RATING}명 이상 모이면 종합 점수가 공개돼요
