@@ -475,7 +475,8 @@ export default function UnniMapMobile() {
             <div style={s.miniListScroll}>
               {filteredSpots.slice(0, 5).map(spot => {
                 const cfg = RATING_CONFIG[spot.rating];
-                const hasEnough = spot.reviews >= MIN_REVIEWS_FOR_RATING;
+                const reviews = typeof spot.reviews === 'string' ? parseInt(spot.reviews) : (spot.reviews || 0);
+                const hasEnough = reviews >= MIN_REVIEWS_FOR_RATING;
                 return (
                   <button key={spot.id} style={s.miniCard} onClick={() => selectSpot(spot)}>
                     {hasEnough ? (
@@ -483,7 +484,7 @@ export default function UnniMapMobile() {
                         {cfg.emoji} {cfg.short}
                       </div>
                     ) : (
-                      <div style={s.miniCardBadgePending}>👩 {spot.reviews}명</div>
+                      <div style={s.miniCardBadgePending}>👩 {reviews}명</div>
                     )}
                     <div style={s.miniCardName}>{spot.name}</div>
                     <div style={s.miniCardCat}>{spot.category}</div>
@@ -622,7 +623,7 @@ function BottomSheet({ spot, sheetState, setSheetState, onClose }) {
             </div>
           ) : (
             <div style={{ ...s.sheetRating, background: "#EEE", color: "#888" }}>
-              👩 {spot.reviews}명이 다녀감
+              👩 {reviews}명이 다녀감
             </div>
           )}
           <div style={s.sheetName}>{spot.name}</div>
