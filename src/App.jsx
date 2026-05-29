@@ -63,8 +63,9 @@ export default function UnniMapMobile() {
   const [showSplash, setShowSplash] = useState(true);
   const [showLocationAsk, setShowLocationAsk] = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
-  const [sheetState, setSheetState] = useState("collapsed"); // collapsed | half | full
+  const [sheetState, setSheetState] = useState("collapsed");
   const [selected, setSelected] = useState(null);
+  const [noInfoPos, setNoInfoPos] = useState(null);
   const [filter, setFilter] = useState("all");
   const [view, setView] = useState("map"); // map | add | detail
   const [addStep, setAddStep] = useState(0);
@@ -198,9 +199,33 @@ export default function UnniMapMobile() {
     setAddStep(getPrevStep(addStep, addData));
   };
 
+  const metersBetween = (a, b) => {
+    const R = 6371000;
+    const φ1 = a.lat * Math.PI / 180, φ2 = b.lat * Math.PI / 180;
+    const Δφ = (b.lat - a.lat) * Math.PI / 180;
+    const Δλ = (b.lng - a.lng) * Math.PI / 180;
+    const x = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+  };
+
   const selectSpot = (spot) => {
     setSelected(spot);
     setSheetState("half");
+    setNoInfoPos(null);
+    if (spot.lat && spot.lng) setMapPanTo({ lat: spot.lat, lng: spot.lng });
+  };
+
+  const handleMapClick = ({ lat, lng }) => {
+    if (sheetState !== "collapsed") { setSelected(null); setSheetState("collapsed"); return; }
+    const nearest = spots
+      .filter(s => s.lat && s.lng)
+      .map(s => ({ s, d: metersBetween({ lat, lng }, { lat: s.lat, lng: s.lng }) }))
+      .sort((a, b) => a.d - b.d)[0];
+    if (nearest && nearest.d < 100) {
+      selectSpot(nearest.s);
+    } else {
+      setNoInfoPos({ lat, lng });
+    }
   };
 
   const handleInstall = async () => {
@@ -407,12 +432,29 @@ export default function UnniMapMobile() {
             selected={selected}
             onSelectSpot={selectSpot}
             panTo={mapPanTo}
+            onMapClick={handleMapClick}
           />
           <button style={s.fab} onClick={() => { setView("add"); setAddStep(0); setAddData(EMPTY_DATA); }}>
             <span style={{ fontSize: 20 }}>+</span>
             <span style={{ fontSize: 12, fontWeight: 800 }}>정보 올리기</span>
           </button>
         </div>
+
+        {/* 정보 없는 위치 클릭 시 안내 카드 */}
+        {noInfoPos && !selected && (
+          <div style={s.noInfoCard}>
+            <button style={s.noInfoClose} onClick={() => setNoInfoPos(null)}>✕</button>
+            <div style={{ fontSize: 28, marginBottom: 6 }}>🥲</div>
+            <div style={s.noInfoTitle}>아직 정보가 없어요 언니!</div>
+            <div style={s.noInfoSub}>여기 화장실 써봤으면 정보 올려줘요</div>
+            <button style={s.noInfoBtn} onClick={() => {
+              setNoInfoPos(null);
+              setView("add");
+              setAddStep(0);
+              setAddData(EMPTY_DATA);
+            }}>+ 정보 올리기</button>
+          </div>
+        )}
 
         {/* 바텀시트 */}
         {selected && sheetState !== "collapsed" && (
@@ -669,7 +711,7 @@ function InfoBox({ icon, value }) {
 // KAKAO MAP
 // ─────────────────────────────────────────────
 
-function KakaoMap({ spots, userLocation, selected, onSelectSpot, panTo }) {
+function KakaoMap({ spots, userLocation, selected, onSelectSpot, panTo, onMapClick }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const overlaysRef = useRef([]);
@@ -688,6 +730,9 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot, panTo }) {
           mapRef.current = new window.kakao.maps.Map(containerRef.current, {
             center,
             level: 4,
+          });
+          window.kakao.maps.event.addListener(mapRef.current, 'click', (e) => {
+            if (onMapClick) onMapClick({ lat: e.latLng.getLat(), lng: e.latLng.getLng() });
           });
           setMapReady(true);
         } catch (e) {
@@ -1659,6 +1704,30 @@ const s = {
     fontSize: 16, fontWeight: 800,
     cursor: "pointer",
     width: "100%",
+  },
+
+  // NO INFO CARD
+  noInfoCard: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    background: '#fff',
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
+    padding: '20px 20px 36px',
+    zIndex: 200, textAlign: 'center',
+  },
+  noInfoClose: {
+    position: 'absolute', top: 12, right: 14,
+    background: 'rgba(255,255,255,0.9)', border: '1px solid #FFE0EC',
+    borderRadius: '50%', width: 28, height: 28,
+    fontSize: 12, cursor: 'pointer', color: '#999',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  noInfoTitle: { fontSize: 16, fontWeight: 800, color: '#333', marginBottom: 6 },
+  noInfoSub: { fontSize: 13, color: '#aaa', marginBottom: 18 },
+  noInfoBtn: {
+    background: 'linear-gradient(135deg, #FF6B9D, #FF8FB3)',
+    color: '#fff', border: 'none', borderRadius: 14,
+    padding: '12px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer',
   },
 
   // MASTER
