@@ -797,6 +797,9 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot, onMapClick, con
       if (!cfg) return;
       const reviews = typeof spot.reviews === 'string' ? parseInt(spot.reviews) : (spot.reviews || 0);
       const hasEnough = reviews >= MIN_REVIEWS_FOR_RATING;
+      if (spot.name === '오뜨하우스') {
+        console.log(`[DEBUG] ${spot.name}: reviews=${spot.reviews} (타입:${typeof spot.reviews}), 변환후=${reviews}, hasEnough=${hasEnough}, MIN=${MIN_REVIEWS_FOR_RATING}`);
+      }
       const pinColor = hasEnough ? cfg.pinBg : '#CCCCCC';
       const pinEmoji = hasEnough ? cfg.emoji : '❓';
       const isSelected = selected?.id === spot.id;
