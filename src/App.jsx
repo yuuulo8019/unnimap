@@ -693,27 +693,28 @@ function BottomSheet({ spot, sheetState, setSheetState, onClose, onAddReview }) 
           )}
           <div style={s.sheetName}>{spot.name}</div>
           <div style={s.sheetCat}>{spot.category}</div>
-        </div>
 
-        {/* 평가 버튼 */}
-        <button
-          onClick={onAddReview}
-          style={{
-            width: "calc(100% - 32px)",
-            margin: "12px 16px",
-            padding: "10px 16px",
-            border: "2px solid #FF6B9D",
-            background: "transparent",
-            color: "#FF6B9D",
-            fontSize: 14,
-            fontWeight: 600,
-            borderRadius: 8,
-            cursor: "pointer",
-            fontFamily: "inherit",
-          }}
-        >
-          언니도 평가할래? 💕
-        </button>
+          {/* 평가 버튼 */}
+          <button
+            onClick={onAddReview}
+            style={{
+              width: "calc(100% - 48px)",
+              marginTop: 12,
+              marginBottom: 12,
+              padding: "10px 16px",
+              border: "2px solid #FF6B9D",
+              background: "transparent",
+              color: "#FF6B9D",
+              fontSize: 14,
+              fontWeight: 600,
+              borderRadius: 8,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            언니도 평가할래? 💕
+          </button>
+        </div>
 
         <div style={s.sheetBody}>
           {!hasEnough && (
@@ -730,7 +731,7 @@ function BottomSheet({ spot, sheetState, setSheetState, onClose, onAddReview }) 
           <div style={s.sectionTitle}>화장실 정보</div>
           <div style={s.infoGrid}>
             <InfoBox icon={g.icon} value={g.label} />
-            <InfoBox icon={ACCESS_ICONS[spot.access]} value={spot.access} />
+            <InfoBox icon={spot.access ? ACCESS_ICONS[spot.access] : "❓"} value={spot.access || "정보 없음"} />
             <InfoBox icon={loc.icon} value={loc.label} />
           </div>
 
