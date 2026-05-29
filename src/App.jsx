@@ -325,7 +325,7 @@ export default function UnniMapMobile() {
         minHeight: 0,
       }}>
         {/* 상단 검색바 */}
-        <div style={{ ...s.topBar, position: "relative" }}>
+        <div style={{ ...s.topBar, position: "relative", zIndex: 300 }}>
           <div style={s.logo} onClick={handleLogoTap}>
             <span style={{ fontSize: 18 }}>🚻</span>
             <span style={s.logoText}>언니맵</span>
