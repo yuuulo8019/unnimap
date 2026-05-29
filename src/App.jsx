@@ -232,16 +232,32 @@ export default function UnniMapMobile() {
     setMasterPw('');
   };
 
-  const handleMapSearch = () => {
-    if (!searchText.trim() || !window.kakao?.maps?.services?.Places) return;
+  const kakaoSearch = (term, onResult) => {
+    if (!term.trim() || !window.kakao?.maps?.services?.Places) return;
     const ps = new window.kakao.maps.services.Places();
-    ps.keywordSearch(searchText, (data, status) => {
-      if (status === window.kakao.maps.services.Status.OK) {
-        setSearchDropdown(data.slice(0, 10));
-        setShowDrop(true);
-      }
-    }, { size: 10 });
+    ps.keywordSearch(term, (data, status) => {
+      if (status === window.kakao.maps.services.Status.OK) onResult(data.slice(0, 10));
+    }, { size: 10, sort: window.kakao.maps.services.SortBy.ACCURACY });
   };
+
+  const handleMapSearch = () => {
+    kakaoSearch(searchText, (results) => {
+      setSearchDropdown(results);
+      setShowDrop(true);
+    });
+  };
+
+  // 타이핑 후 600ms 자동 검색
+  useEffect(() => {
+    if (!searchText.trim()) { setShowDrop(false); setSearchDropdown([]); return; }
+    const t = setTimeout(() => {
+      kakaoSearch(searchText, (results) => {
+        setSearchDropdown(results);
+        setShowDrop(results.length > 0);
+      });
+    }, 600);
+    return () => clearTimeout(t);
+  }, [searchText]);
 
   // 화면 상태 분기
   if (showSplash) return <Splash />;
@@ -950,7 +966,7 @@ function PlaceSearch({ selected, onSelect }) {
           setResults([]);
         }
         setSearchStatus('done');
-      }, { size: 10 });
+      }, { size: 10, sort: window.kakao.maps.services.SortBy.ACCURACY });
     } catch (e) {
       setSearchStatus('error');
     }
