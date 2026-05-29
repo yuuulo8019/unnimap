@@ -352,7 +352,7 @@ export default function UnniMapMobile() {
         position: "relative",
       }}>
         {/* 상단 검색바 */}
-        <div style={{ ...s.topBar, position: "relative", zIndex: 300 }}>
+        <div style={{ ...s.topBar, position: "relative" }}>
           <div style={s.logo} onClick={handleLogoTap}>
             <span style={{ fontSize: 18 }}>🚻</span>
             <span style={s.logoText}>언니맵</span>
@@ -1779,7 +1779,7 @@ const s = {
     position: 'absolute', top: '100%', left: 0, right: 0,
     background: '#fff', border: '1px solid #FFE0EC', borderTop: 'none',
     borderRadius: '0 0 16px 16px',
-    boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 200,
+    boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 301,
     maxHeight: 260, overflowY: 'auto',
   },
   searchDropItem: {
