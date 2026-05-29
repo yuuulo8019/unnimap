@@ -525,7 +525,7 @@ export default function UnniMapMobile() {
                 final: "",
                 extras: [],
               });
-              setAddStep(2);
+              setAddStep(1);
               setView("add");
               setSelected(null);
               setSheetState("collapsed");
