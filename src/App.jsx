@@ -650,7 +650,7 @@ function AlternatingTagline() {
         setIdx(i => (i + 1) % TAGLINES.length);
         setOpacity(1);
       }, 400);
-    }, 20000);
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 
