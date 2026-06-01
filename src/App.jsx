@@ -170,10 +170,10 @@ export default function UnniMapMobile() {
             reviews: newReviews,
             clean: addData.clean,
             rating: addData.final,
+            extras: addData.extras,
           })
           .eq('id', addData.spotId)
-          .select()
-          .limit(1);
+          .select();
 
         if (error) {
           alert("평가 추가 실패: " + error.message);
@@ -182,7 +182,14 @@ export default function UnniMapMobile() {
         const updated = Array.isArray(data) ? data[0] : data;
         if (updated) {
           setSpots(prev => prev.map(s => s.id === addData.spotId ? updated : s));
-          setSelected(updated);
+        } else {
+          // 업데이트 후 DB에서 최신 데이터 직접 조회
+          const { data: fresh } = await supabase
+            .from('spots')
+            .select('*')
+            .eq('id', addData.spotId)
+            .single();
+          if (fresh) setSpots(prev => prev.map(s => s.id === addData.spotId ? fresh : s));
         }
       } else {
         // 신규 장소 등록
@@ -1675,7 +1682,10 @@ const s = {
     overflow: "hidden",
   },
   addHeader: {
-    padding: "14px 16px 8px",
+    paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)",
+    paddingBottom: 8,
+    paddingLeft: 16,
+    paddingRight: 16,
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
