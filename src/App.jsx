@@ -76,6 +76,8 @@ export default function UnniMapMobile() {
   const [userLocation, setUserLocation] = useState(DEFAULT_CENTER);
   const [searchDropdown, setSearchDropdown] = useState([]);
   const [showDrop, setShowDrop] = useState(false);
+  const searchBarRef = useRef(null);
+  const [dropRect, setDropRect] = useState(null);
   const [isMaster, setIsMaster] = useState(() => localStorage.getItem('__um') === '1');
   const [showMasterLogin, setShowMasterLogin] = useState(false);
   const [masterPw, setMasterPw] = useState('');
@@ -314,22 +316,23 @@ export default function UnniMapMobile() {
     }, { size: 10, bounds: koreaBounds });
   };
 
+  const showDropdown = (results) => {
+    setSearchDropdown(results);
+    setShowDrop(results.length > 0);
+    if (searchBarRef.current) {
+      const rect = searchBarRef.current.getBoundingClientRect();
+      setDropRect({ top: rect.bottom + 6, left: rect.left, right: window.innerWidth - rect.right });
+    }
+  };
+
   const handleMapSearch = () => {
-    kakaoSearch(searchText, (results) => {
-      setSearchDropdown(results);
-      setShowDrop(true);
-    });
+    kakaoSearch(searchText, showDropdown);
   };
 
   // 타이핑 후 600ms 자동 검색
   useEffect(() => {
     if (!searchText.trim()) { setShowDrop(false); setSearchDropdown([]); return; }
-    const t = setTimeout(() => {
-      kakaoSearch(searchText, (results) => {
-        setSearchDropdown(results);
-        setShowDrop(results.length > 0);
-      });
-    }, 600);
+    const t = setTimeout(() => kakaoSearch(searchText, showDropdown), 600);
     return () => clearTimeout(t);
   }, [searchText]);
 
@@ -406,7 +409,7 @@ export default function UnniMapMobile() {
               >👑</span>
             )}
           </div>
-          <div style={s.searchWrap}>
+          <div ref={searchBarRef} style={s.searchWrap}>
             <input
               style={s.searchInput}
               placeholder="장소명 검색..."
@@ -420,38 +423,50 @@ export default function UnniMapMobile() {
             }
             <button style={s.searchGoBtn} onClick={handleMapSearch}>🔍</button>
           </div>
-
-          {/* 카카오 장소 검색 드롭다운 */}
-          {showDrop && searchDropdown.length > 0 && (
-            <div style={s.searchDrop}>
-              {searchDropdown.map(r => (
-                <button
-                  key={r.id}
-                  style={s.searchDropItem}
-                  onClick={() => {
-                    setAddData({
-                      ...EMPTY_DATA,
-                      place: {
-                        name: r.place_name,
-                        lat: parseFloat(r.y),
-                        lng: parseFloat(r.x),
-                        address: r.road_address_name || r.address_name,
-                        category: r.category_group_name || '기타',
-                      }
-                    });
-                    setAddStep(1);
-                    setView("add");
-                    setSearchText('');
-                    setShowDrop(false);
-                  }}
-                >
-                  <div style={s.searchDropName}>{r.place_name}</div>
-                  <div style={s.searchDropAddr}>{r.road_address_name || r.address_name}</div>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
+
+        {/* 검색 드롭다운 - position:fixed로 overflow/z-index 문제 완전 회피 */}
+        {showDrop && searchDropdown.length > 0 && dropRect && (
+          <div style={{
+            position: 'fixed',
+            top: dropRect.top,
+            left: dropRect.left,
+            right: dropRect.right,
+            background: '#fff',
+            border: '1px solid #FFE0EC',
+            borderRadius: 12,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+            zIndex: 9999,
+            maxHeight: 260,
+            overflowY: 'auto',
+          }}>
+            {searchDropdown.map(r => (
+              <button
+                key={r.id}
+                style={s.searchDropItem}
+                onClick={() => {
+                  setAddData({
+                    ...EMPTY_DATA,
+                    place: {
+                      name: r.place_name,
+                      lat: parseFloat(r.y),
+                      lng: parseFloat(r.x),
+                      address: r.road_address_name || r.address_name,
+                      category: r.category_group_name || '기타',
+                    }
+                  });
+                  setAddStep(1);
+                  setView("add");
+                  setSearchText('');
+                  setShowDrop(false);
+                }}
+              >
+                <div style={s.searchDropName}>{r.place_name}</div>
+                <div style={s.searchDropAddr}>{r.road_address_name || r.address_name}</div>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* 필터 칩 */}
         <div style={s.filterRow}>
