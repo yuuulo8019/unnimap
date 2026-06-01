@@ -173,15 +173,16 @@ export default function UnniMapMobile() {
           })
           .eq('id', addData.spotId)
           .select()
-          .single();
+          .limit(1);
 
         if (error) {
           alert("평가 추가 실패: " + error.message);
           return;
         }
-        if (data) {
-          setSpots(prev => prev.map(s => s.id === addData.spotId ? data : s));
-          setSelected(data);
+        const updated = Array.isArray(data) ? data[0] : data;
+        if (updated) {
+          setSpots(prev => prev.map(s => s.id === addData.spotId ? updated : s));
+          setSelected(updated);
         }
       } else {
         // 신규 장소 등록
