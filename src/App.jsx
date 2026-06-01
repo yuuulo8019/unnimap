@@ -275,7 +275,21 @@ export default function UnniMapMobile() {
     if (nearest && nearest.d < 100) {
       selectSpot(nearest.s);
     } else {
-      setNoInfoPos({ lat, lng });
+      // Kakao 역지오코딩으로 건물명/주소 조회
+      setNoInfoPos({ lat, lng, name: null });
+      if (window.kakao?.maps?.services) {
+        const geocoder = new window.kakao.maps.services.Geocoder();
+        geocoder.coord2Address(lng, lat, (result, status) => {
+          if (status === window.kakao.maps.services.Status.OK && result[0]) {
+            const addr = result[0];
+            const name = addr.road_address?.building_name ||
+                         addr.road_address?.address_name ||
+                         addr.address?.address_name ||
+                         null;
+            setNoInfoPos({ lat, lng, name });
+          }
+        });
+      }
     }
   };
 
@@ -517,13 +531,23 @@ export default function UnniMapMobile() {
           <div style={s.noInfoCard}>
             <button style={s.noInfoClose} onClick={() => setNoInfoPos(null)}>✕</button>
             <div style={{ fontSize: 28, marginBottom: 6 }}>🥲</div>
-            <div style={s.noInfoTitle}>아직 정보가 없어요 언니!</div>
-            <div style={s.noInfoSub}>여기 화장실 써봤으면 정보 올려줘요</div>
+            <div style={s.noInfoTitle}>
+              {noInfoPos.name ? `${noInfoPos.name}은 아직 정보가 없어요 언니!` : "아직 정보가 없어요 언니!"}
+            </div>
+            <div style={s.noInfoSub}>여기 화장실 정보 알려주실래요 언니? 💕</div>
             <button style={s.noInfoBtn} onClick={() => {
               setNoInfoPos(null);
+              setAddData({
+                ...EMPTY_DATA,
+                place: {
+                  name: noInfoPos.name || "이 장소",
+                  lat: noInfoPos.lat,
+                  lng: noInfoPos.lng,
+                  category: "직접추가",
+                },
+              });
+              setAddStep(1);
               setView("add");
-              setAddStep(0);
-              setAddData(EMPTY_DATA);
             }}>+ 정보 올리기</button>
           </div>
         )}
