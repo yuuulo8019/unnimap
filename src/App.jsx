@@ -180,29 +180,21 @@ export default function UnniMapMobile() {
       );
 
       if (existing) {
-        // 기존 장소 재평가: INSERT만 사용 (RLS가 UPDATE/DELETE 차단)
-        // 최신 항목을 INSERT, 로딩 시 name+좌표 기준 중복 제거로 최신만 표시
+        // 기존 장소 재평가: UPDATE (reviews +1, 최신 평가로 교체)
         const newReviews = (parseInt(existing.reviews) || 0) + 1;
 
-        const { error: insError } = await supabase
+        const { error: updError } = await supabase
           .from('spots')
-          .insert({
-            name: existing.name,
-            lat: existing.lat,
-            lng: existing.lng,
-            category: existing.category,
-            gender: existing.gender,
-            stalls: existing.stalls,
-            access: existing.access,
-            location: existing.location,
+          .update({
             reviews: newReviews,
             clean: addData.clean,
             rating: addData.final,
             extras: addData.extras,
-          });
+          })
+          .eq('id', existing.id);
 
-        if (insError) {
-          alert("평가 추가 실패: " + insError.message);
+        if (updError) {
+          alert("평가 추가 실패: " + updError.message);
           return;
         }
       } else {
