@@ -675,8 +675,8 @@ function LocationModal({ onGrant, onDeny }) {
         <div style={{ fontSize: 48, marginBottom: 12 }}>📍</div>
         <div style={s.modalTitle}>언니 어디야?</div>
         <div style={s.modalSub}>
-          내 주변 깨끗한 화장실을<br/>
-          빠르게 찾으려면 위치가 필요해요!
+          언니 근처 깨끗한 화장실 바로 찾아줄게.<br/>
+          위치만 알려줘!
         </div>
         <button style={s.modalPrimary} onClick={onGrant}>
           📍 위치 알려주기
