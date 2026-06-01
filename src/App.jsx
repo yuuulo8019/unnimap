@@ -52,6 +52,21 @@ const DEFAULT_CENTER = { lat: 37.5563, lng: 126.9236 };
 
 const MOCK_SPOTS = [];
 
+const ALLOWED_CATEGORY_CODES = new Set([
+  'CE7', // 카페
+  'FD6', // 음식점
+  'CS2', // 편의점
+  'MT1', // 대형마트
+  'SW8', // 지하철역
+  'PO3', // 공공기관
+  'HP8', // 병원
+  'BK9', // 은행
+  'CT1', // 문화시설
+  'AC5', // 학원
+  'AT4', // 관광명소
+]);
+
+const BLOCKED_CATEGORY_MSG = "언니, 여기는 등록이 어려워요 🥲 카페나 음식점 같은 매장을 선택해줘!";
 
 const EMPTY_DATA = { place: null, gender: "", stalls: "", access: "", location: "", clean: "", final: "", extras: [] };
 
@@ -275,18 +290,17 @@ export default function UnniMapMobile() {
     if (nearest && nearest.d < 100) {
       selectSpot(nearest.s);
     } else {
-      // Kakao 역지오코딩으로 건물명/주소 조회
-      setNoInfoPos({ lat, lng, name: null });
+      // Kakao 역지오코딩: building_name이 있을 때만 noInfo카드 표시
+      // 도로/빈 공간 클릭은 무시
       if (window.kakao?.maps?.services) {
         const geocoder = new window.kakao.maps.services.Geocoder();
         geocoder.coord2Address(lng, lat, (result, status) => {
           if (status === window.kakao.maps.services.Status.OK && result[0]) {
-            const addr = result[0];
-            const name = addr.road_address?.building_name ||
-                         addr.road_address?.address_name ||
-                         addr.address?.address_name ||
-                         null;
-            setNoInfoPos({ lat, lng, name });
+            const building = result[0].road_address?.building_name;
+            if (building) {
+              setNoInfoPos({ lat, lng, name: building });
+            }
+            // building_name 없으면 (도로/빈 공간) → 무시
           }
         });
       }
@@ -471,6 +485,10 @@ export default function UnniMapMobile() {
                 key={r.id}
                 style={s.searchDropItem}
                 onClick={() => {
+                  if (r.category_group_code && !ALLOWED_CATEGORY_CODES.has(r.category_group_code)) {
+                    alert(BLOCKED_CATEGORY_MSG);
+                    return;
+                  }
                   setAddData({
                     ...EMPTY_DATA,
                     place: {
@@ -1216,13 +1234,19 @@ function PlaceSearch({ selected, onSelect }) {
             <button
               key={r.id}
               style={s.placeResultItem}
-              onClick={() => onSelect({
-                name: r.place_name,
-                lat: parseFloat(r.y),
-                lng: parseFloat(r.x),
-                address: r.road_address_name || r.address_name,
-                category: r.category_group_name || '기타',
-              })}
+              onClick={() => {
+                if (r.category_group_code && !ALLOWED_CATEGORY_CODES.has(r.category_group_code)) {
+                  alert(BLOCKED_CATEGORY_MSG);
+                  return;
+                }
+                onSelect({
+                  name: r.place_name,
+                  lat: parseFloat(r.y),
+                  lng: parseFloat(r.x),
+                  address: r.road_address_name || r.address_name,
+                  category: r.category_group_name || '기타',
+                });
+              }}
             >
               <div style={s.placeResultName}>{r.place_name}</div>
               <div style={s.placeResultAddr}>{r.road_address_name || r.address_name}</div>
