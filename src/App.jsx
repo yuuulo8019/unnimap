@@ -77,6 +77,7 @@ export default function UnniMapMobile() {
   const [searchDropdown, setSearchDropdown] = useState([]);
   const [showDrop, setShowDrop] = useState(false);
   const searchBarRef = useRef(null);
+  const filterRowRef = useRef(null);
   const [dropRect, setDropRect] = useState(null);
   const [isMaster, setIsMaster] = useState(() => localStorage.getItem('__um') === '1');
   const [showMasterLogin, setShowMasterLogin] = useState(false);
@@ -188,6 +189,10 @@ export default function UnniMapMobile() {
             clean: addData.clean,
             rating: addData.final,
             extras: addData.extras,
+            access: addData.access || null,
+            location: addData.location || existing.location,
+            gender: addData.gender || existing.gender,
+            stalls: addData.gender === "공용" ? null : (addData.stalls || existing.stalls),
           })
           .eq('id', existing.id);
 
@@ -319,9 +324,16 @@ export default function UnniMapMobile() {
   const showDropdown = (results) => {
     setSearchDropdown(results);
     setShowDrop(results.length > 0);
-    if (searchBarRef.current) {
-      const rect = searchBarRef.current.getBoundingClientRect();
-      setDropRect({ top: rect.bottom + 6, left: rect.left, right: window.innerWidth - rect.right });
+    // 필터칩 아래부터 시작하도록 filterRow 기준으로 위치 계산
+    const anchor = filterRowRef.current || searchBarRef.current;
+    if (anchor) {
+      const rect = anchor.getBoundingClientRect();
+      const searchRect = searchBarRef.current?.getBoundingClientRect();
+      setDropRect({
+        top: rect.bottom + 4,
+        left: searchRect ? searchRect.left : 16,
+        right: searchRect ? window.innerWidth - searchRect.right : 16,
+      });
     }
   };
 
@@ -469,7 +481,7 @@ export default function UnniMapMobile() {
         )}
 
         {/* 필터 칩 */}
-        <div style={s.filterRow}>
+        <div ref={filterRowRef} style={s.filterRow}>
           {[["all","전체"], ["best","여기로 와!"], ["good","써도 돼"], ["mid","급하면..."], ["bad","전 가게 ㄱㄱ"]].map(([key, label]) => (
             <button
               key={key}
@@ -744,7 +756,7 @@ function BottomSheet({ spot, sheetState, setSheetState, onClose, onAddReview }) 
           <div style={s.sectionTitle}>화장실 정보</div>
           <div style={s.infoGrid}>
             <InfoBox icon={g.icon} value={g.label} />
-            <InfoBox icon={spot.access ? ACCESS_ICONS[spot.access] : "❓"} value={spot.access || "정보 없음"} />
+            <InfoBox icon={spot.access && spot.access !== 'null' ? ACCESS_ICONS[spot.access] : "❓"} value={spot.access && spot.access !== 'null' ? spot.access : "정보 없음"} />
             <InfoBox icon={loc.icon} value={loc.label} />
           </div>
 
