@@ -441,15 +441,18 @@ export default function UnniMapMobile() {
       }}>
         {/* 상단 검색바 */}
         <div style={{ ...s.topBar, position: "relative" }}>
-          <div style={s.logo} onClick={handleLogoTap}>
-            <span style={{ fontSize: 18 }}>🚻</span>
-            <span style={s.logoText}>언니맵</span>
-            {isMaster && (
-              <span
-                style={s.masterBadge}
-                onClick={e => { e.stopPropagation(); localStorage.removeItem('__um'); setIsMaster(false); }}
-              >👑</span>
-            )}
+          <div style={{ ...s.logo, justifyContent: "space-between" }} onClick={handleLogoTap}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 18 }}>🚻</span>
+              <span style={s.logoText}>언니맵</span>
+              {isMaster && (
+                <span
+                  style={s.masterBadge}
+                  onClick={e => { e.stopPropagation(); localStorage.removeItem('__um'); setIsMaster(false); }}
+                >👑</span>
+              )}
+            </div>
+            <AlternatingTagline />
           </div>
           <div ref={searchBarRef} style={s.searchWrap}>
             <input
@@ -633,6 +636,41 @@ export default function UnniMapMobile() {
 // ─────────────────────────────────────────────
 // SPLASH
 // ─────────────────────────────────────────────
+
+const TAGLINES = ["언니, 거기 말고 여기 가.", "급하다고 아무데나 가지 마."];
+
+function AlternatingTagline() {
+  const [idx, setIdx] = useState(0);
+  const [opacity, setOpacity] = useState(1);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setOpacity(0);
+      setTimeout(() => {
+        setIdx(i => (i + 1) % TAGLINES.length);
+        setOpacity(1);
+      }, 400);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <span style={{
+      fontSize: 11,
+      color: "#FF6B9D",
+      opacity,
+      transition: "opacity 0.4s ease",
+      maxWidth: 160,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+      fontWeight: 500,
+      letterSpacing: "-0.2px",
+    }}>
+      {TAGLINES[idx]}
+    </span>
+  );
+}
 
 function Splash({ visible }) {
   const [logoVisible, setLogoVisible] = useState(false);
