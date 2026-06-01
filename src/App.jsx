@@ -60,6 +60,7 @@ const EMPTY_DATA = { place: null, gender: "", stalls: "", access: "", location: 
 
 export default function UnniMapMobile() {
   const [showSplash, setShowSplash] = useState(true);
+  const [splashVisible, setSplashVisible] = useState(true);
   const [showLocationAsk, setShowLocationAsk] = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [sheetState, setSheetState] = useState("collapsed");
@@ -110,13 +111,16 @@ export default function UnniMapMobile() {
     loadSpots().then(() => setSpotsLoading(false));
   }, []);
 
-  // 스플래시 + 위치 권한 요청 흐름
+  // 스플래시: 2s 표시 → 0.5s fade out → 숨김
   useEffect(() => {
-    const t = setTimeout(() => {
-      setShowSplash(false);
-      setTimeout(() => setShowLocationAsk(true), 300);
-    }, 2200);
-    return () => clearTimeout(t);
+    const fadeOut = setTimeout(() => {
+      setSplashVisible(false);
+      setTimeout(() => {
+        setShowSplash(false);
+        setTimeout(() => setShowLocationAsk(true), 300);
+      }, 500); // fade 완료 후 제거
+    }, 2000);
+    return () => clearTimeout(fadeOut);
   }, []);
 
   // 홈 화면 추가 — beforeinstallprompt 이벤트가 올 때만 배너 표시
@@ -375,7 +379,7 @@ export default function UnniMapMobile() {
   }, [searchText]);
 
   // 화면 상태 분기
-  if (showSplash) return <Splash />;
+  if (showSplash) return <Splash visible={splashVisible} />;
 
   return (
     <div style={s.app}>
@@ -630,17 +634,32 @@ export default function UnniMapMobile() {
 // SPLASH
 // ─────────────────────────────────────────────
 
-function Splash() {
+function Splash({ visible }) {
+  const [logoVisible, setLogoVisible] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setLogoVisible(true), 80);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
-    <div style={s.splash}>
-      <div style={s.splashIcon}>🚻</div>
-      <div style={s.splashTitle}>언니맵</div>
-      <div style={s.splashSub}>언니가 언니를 위해<br/>화장실 정보를 나눠요</div>
-      <div style={s.splashDots}>
-        <span style={{ ...s.dot, animationDelay: "0s" }} />
-        <span style={{ ...s.dot, animationDelay: "0.2s" }} />
-        <span style={{ ...s.dot, animationDelay: "0.4s" }} />
-      </div>
+    <div style={{
+      ...s.splash,
+      opacity: visible ? 1 : 0,
+      transition: "opacity 0.5s ease",
+    }}>
+      <img
+        src="/logo.png"
+        alt="언니맵"
+        style={{
+          width: "60%",
+          maxWidth: 300,
+          opacity: logoVisible ? 1 : 0,
+          transition: "opacity 0.6s ease",
+        }}
+        onError={e => { e.target.style.display = 'none'; }}
+      />
+      <div style={s.splashTagline}>언니, 거기 말고 여기 가.</div>
     </div>
   );
 }
@@ -1289,23 +1308,21 @@ const s = {
 
   // SPLASH
   splash: {
-    minHeight: "100vh",
-    background: "linear-gradient(160deg, #FF6B9D 0%, #FF8FB3 50%, #FFB3CC 100%)",
+    position: "fixed",
+    inset: 0,
+    background: "#FFF0F5",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    color: "#fff",
-    padding: 32,
+    zIndex: 9999,
+    gap: 16,
   },
-  splashIcon: { fontSize: 72, marginBottom: 12 },
-  splashTitle: { fontSize: 42, fontWeight: 900, letterSpacing: "-2px", marginBottom: 8 },
-  splashSub: { fontSize: 16, opacity: 0.9, lineHeight: 1.6, marginBottom: 32, textAlign: "center" },
-  splashDots: { display: "flex", gap: 8 },
-  dot: {
-    width: 8, height: 8,
-    borderRadius: "50%",
-    background: "rgba(255,255,255,0.7)",
+  splashTagline: {
+    fontSize: 14,
+    color: "#888",
+    fontWeight: 500,
+    letterSpacing: "-0.3px",
   },
 
   // LOCATION MODAL
