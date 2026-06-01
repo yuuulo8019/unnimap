@@ -168,33 +168,46 @@ export default function UnniMapMobile() {
       );
 
       if (existing) {
-        // 기존 장소 추가 평가: reviews +1, 최신 평가로 업데이트
+        // 기존 장소 추가 평가: DELETE + INSERT로 데이터 교체 (RLS UPDATE 우회)
         const newReviews = (parseInt(existing.reviews) || 0) + 1;
-        const { error } = await supabase
+
+        const { error: delError } = await supabase
           .from('spots')
-          .update({
+          .delete()
+          .eq('id', existing.id);
+
+        if (delError) {
+          alert("평가 추가 실패: " + delError.message);
+          return;
+        }
+
+        const { data: inserted, error: insError } = await supabase
+          .from('spots')
+          .insert({
+            name: existing.name,
+            lat: existing.lat,
+            lng: existing.lng,
+            category: existing.category,
+            gender: existing.gender,
+            stalls: existing.stalls,
+            access: existing.access,
+            location: existing.location,
             reviews: newReviews,
             clean: addData.clean,
             rating: addData.final,
             extras: addData.extras,
           })
-          .eq('id', existing.id);
+          .select()
+          .single();
 
-        if (error) {
-          alert("평가 추가 실패: " + error.message);
+        if (insError) {
+          alert("평가 추가 실패: " + insError.message);
           return;
         }
 
-        // UPDATE 후 DB에서 최신 데이터 조회
-        const { data: fresh } = await supabase
-          .from('spots')
-          .select('*')
-          .eq('id', existing.id)
-          .single();
-
-        if (fresh) {
-          setSpots(prev => prev.map(s => s.id === existing.id ? fresh : s));
-          setSelected(fresh);
+        if (inserted) {
+          setSpots(prev => [inserted, ...prev.filter(s => s.id !== existing.id)]);
+          setSelected(inserted);
         }
       } else {
         // 신규 장소 등록
