@@ -84,16 +84,28 @@ export default function UnniMapMobile() {
   const installPrompt = useRef(null);
   const mapControl = useRef(null); // KakaoMap 직접 제어용
 
-  // Supabase에서 spots 불러오기
-  useEffect(() => {
-    supabase
+  // 중복 제거하며 spots 불러오기 (같은 이름+좌표 중 최신만 유지)
+  const loadSpots = async () => {
+    const { data, error } = await supabase
       .from('spots')
       .select('*')
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (!error && data) setSpots(data);
-        setSpotsLoading(false);
+      .order('created_at', { ascending: false });
+    if (!error && data) {
+      const seen = new Set();
+      const deduped = data.filter(s => {
+        const key = `${s.name}_${Math.round(s.lat * 1000)}_${Math.round(s.lng * 1000)}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
       });
+      setSpots(deduped);
+    }
+    return data;
+  };
+
+  // 초기 로드
+  useEffect(() => {
+    loadSpots().then(() => setSpotsLoading(false));
   }, []);
 
   // 스플래시 + 위치 권한 요청 흐름
@@ -168,20 +180,11 @@ export default function UnniMapMobile() {
       );
 
       if (existing) {
-        // 기존 장소 추가 평가: DELETE + INSERT로 데이터 교체 (RLS UPDATE 우회)
+        // 기존 장소 재평가: INSERT만 사용 (RLS가 UPDATE/DELETE 차단)
+        // 최신 항목을 INSERT, 로딩 시 name+좌표 기준 중복 제거로 최신만 표시
         const newReviews = (parseInt(existing.reviews) || 0) + 1;
 
-        const { error: delError } = await supabase
-          .from('spots')
-          .delete()
-          .eq('id', existing.id);
-
-        if (delError) {
-          alert("평가 추가 실패: " + delError.message);
-          return;
-        }
-
-        const { data: inserted, error: insError } = await supabase
+        const { error: insError } = await supabase
           .from('spots')
           .insert({
             name: existing.name,
@@ -196,18 +199,11 @@ export default function UnniMapMobile() {
             clean: addData.clean,
             rating: addData.final,
             extras: addData.extras,
-          })
-          .select()
-          .single();
+          });
 
         if (insError) {
           alert("평가 추가 실패: " + insError.message);
           return;
-        }
-
-        if (inserted) {
-          setSpots(prev => [inserted, ...prev.filter(s => s.id !== existing.id)]);
-          setSelected(inserted);
         }
       } else {
         // 신규 장소 등록
@@ -216,40 +212,31 @@ export default function UnniMapMobile() {
         const reviews = isMaster ? cycle[idx] : 1;
         if (isMaster) localStorage.setItem('__um_i', String((idx + 1) % cycle.length));
 
-        const newSpot = {
-          name: addData.place.name || "내가 추가한 장소",
-          lat: addData.place.lat,
-          lng: addData.place.lng,
-          category: addData.place.category || "직접추가",
-          rating: addData.final,
-          gender: addData.gender,
-          stalls: addData.gender === "공용" ? null : addData.stalls,
-          access: addData.access || null,
-          location: addData.location,
-          clean: addData.clean,
-          extras: addData.extras,
-          reviews,
-        };
-
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('spots')
-          .insert(newSpot)
-          .select()
-          .single();
+          .insert({
+            name: addData.place.name || "내가 추가한 장소",
+            lat: addData.place.lat,
+            lng: addData.place.lng,
+            category: addData.place.category || "직접추가",
+            rating: addData.final,
+            gender: addData.gender,
+            stalls: addData.gender === "공용" ? null : addData.stalls,
+            access: addData.access || null,
+            location: addData.location,
+            clean: addData.clean,
+            extras: addData.extras,
+            reviews,
+          });
 
         if (error) {
           alert("등록 실패: " + error.message);
           return;
         }
-        if (data) setSpots(prev => [data, ...prev]);
       }
 
-      // 등록/재평가 후 전체 spots 새로고침
-      supabase
-        .from('spots')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .then(({ data: fresh }) => { if (fresh) setSpots(fresh); });
+      // 등록/재평가 후 전체 spots 새로 불러오기 (중복 제거 포함)
+      await loadSpots();
 
       setView("done");
       setAddStep(0);
