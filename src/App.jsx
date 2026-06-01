@@ -244,6 +244,13 @@ export default function UnniMapMobile() {
         if (data) setSpots(prev => [data, ...prev]);
       }
 
+      // 등록/재평가 후 전체 spots 새로고침
+      supabase
+        .from('spots')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .then(({ data: fresh }) => { if (fresh) setSpots(fresh); });
+
       setView("done");
       setAddStep(0);
       setAddData(EMPTY_DATA);
