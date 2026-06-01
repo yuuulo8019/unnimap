@@ -53,7 +53,7 @@ const DEFAULT_CENTER = { lat: 37.5563, lng: 126.9236 };
 const MOCK_SPOTS = [];
 
 
-const EMPTY_DATA = { place: null, spotId: null, gender: "", stalls: "", access: "", location: "", clean: "", final: "", extras: [] };
+const EMPTY_DATA = { place: null, gender: "", stalls: "", access: "", location: "", clean: "", final: "", extras: [] };
 
 // ─────────────────────────────────────────────
 // MAIN
@@ -160,11 +160,17 @@ export default function UnniMapMobile() {
         return;
       }
 
-      if (addData.spotId) {
+      // name + lat/lng 기준으로 기존 spot 찾기
+      const existing = spots.find(s =>
+        s.name === addData.place.name &&
+        Math.abs(s.lat - addData.place.lat) < 0.001 &&
+        Math.abs(s.lng - addData.place.lng) < 0.001
+      );
+
+      if (existing) {
         // 기존 장소 추가 평가: reviews +1, 최신 평가로 업데이트
-        const current = spots.find(s => s.id === addData.spotId);
-        const newReviews = (parseInt(current?.reviews) || 0) + 1;
-        const { data, error } = await supabase
+        const newReviews = (parseInt(existing.reviews) || 0) + 1;
+        const { error } = await supabase
           .from('spots')
           .update({
             reviews: newReviews,
@@ -172,24 +178,23 @@ export default function UnniMapMobile() {
             rating: addData.final,
             extras: addData.extras,
           })
-          .eq('id', addData.spotId)
-          .select();
+          .eq('id', existing.id);
 
         if (error) {
           alert("평가 추가 실패: " + error.message);
           return;
         }
-        const updated = Array.isArray(data) ? data[0] : data;
-        if (updated) {
-          setSpots(prev => prev.map(s => s.id === addData.spotId ? updated : s));
-        } else {
-          // 업데이트 후 DB에서 최신 데이터 직접 조회
-          const { data: fresh } = await supabase
-            .from('spots')
-            .select('*')
-            .eq('id', addData.spotId)
-            .single();
-          if (fresh) setSpots(prev => prev.map(s => s.id === addData.spotId ? fresh : s));
+
+        // UPDATE 후 DB에서 최신 데이터 조회
+        const { data: fresh } = await supabase
+          .from('spots')
+          .select('*')
+          .eq('id', existing.id)
+          .single();
+
+        if (fresh) {
+          setSpots(prev => prev.map(s => s.id === existing.id ? fresh : s));
+          setSelected(fresh);
         }
       } else {
         // 신규 장소 등록
@@ -516,7 +521,6 @@ export default function UnniMapMobile() {
                   lng: selected.lng,
                   category: selected.category,
                 },
-                spotId: selected.id,
                 gender: "",
                 stalls: "",
                 access: "",
