@@ -52,22 +52,6 @@ const DEFAULT_CENTER = { lat: 37.5563, lng: 126.9236 };
 
 const MOCK_SPOTS = [];
 
-const ALLOWED_CATEGORY_CODES = new Set([
-  'CE7', // 카페
-  'FD6', // 음식점
-  'CS2', // 편의점
-  'MT1', // 대형마트
-  'SW8', // 지하철역
-  'PO3', // 공공기관
-  'HP8', // 병원
-  'BK9', // 은행
-  'CT1', // 문화시설
-  'AC5', // 학원
-  'AT4', // 관광명소
-]);
-
-const BLOCKED_CATEGORY_MSG = "언니, 여기는 등록이 어려워요 🥲 카페나 음식점 같은 매장을 선택해줘!";
-
 const EMPTY_DATA = { place: null, gender: "", stalls: "", access: "", location: "", clean: "", final: "", extras: [] };
 
 // ─────────────────────────────────────────────
@@ -290,20 +274,34 @@ export default function UnniMapMobile() {
     if (nearest && nearest.d < 100) {
       selectSpot(nearest.s);
     } else {
-      // Kakao 역지오코딩: building_name이 있을 때만 noInfo카드 표시
-      // 도로/빈 공간 클릭은 무시
-      if (window.kakao?.maps?.services) {
-        const geocoder = new window.kakao.maps.services.Geocoder();
-        geocoder.coord2Address(lng, lat, (result, status) => {
-          if (status === window.kakao.maps.services.Status.OK && result[0]) {
-            const building = result[0].road_address?.building_name;
-            if (building) {
-              setNoInfoPos({ lat, lng, name: building });
-            }
-            // building_name 없으면 (도로/빈 공간) → 무시
+      // 여러 카테고리를 병렬 검색해서 클릭 위치 근처 실제 POI 이름 조회
+      // 결과 없으면 (도로/빈공간) → 무시
+      if (!window.kakao?.maps?.services) return;
+      const ps = new window.kakao.maps.services.Places();
+      const location = new window.kakao.maps.LatLng(lat, lng);
+      const opts = { location, radius: 40, size: 1, sort: window.kakao.maps.services.SortBy.DISTANCE };
+      const cats = ['FD6','CE7','CS2','MT1','HP8','BK9','AT4','PO3','SW8','CT1','AC5'];
+      let pending = cats.length;
+      let found = [];
+
+      cats.forEach(code => {
+        ps.categorySearch(code, (data, status) => {
+          if (status === window.kakao.maps.services.Status.OK && data.length > 0) {
+            found.push(data[0]);
           }
-        });
-      }
+          pending--;
+          if (pending === 0 && found.length > 0) {
+            // 가장 가까운 POI 선택
+            const best = found.reduce((min, r) => {
+              const d = metersBetween({ lat, lng }, { lat: parseFloat(r.y), lng: parseFloat(r.x) });
+              return d < min.d ? { r, d } : min;
+            }, { d: Infinity, r: null });
+            if (best.d <= 40 && best.r) {
+              setNoInfoPos({ lat: parseFloat(best.r.y), lng: parseFloat(best.r.x), name: best.r.place_name });
+            }
+          }
+        }, opts);
+      });
     }
   };
 
@@ -485,10 +483,6 @@ export default function UnniMapMobile() {
                 key={r.id}
                 style={s.searchDropItem}
                 onClick={() => {
-                  if (r.category_group_code && !ALLOWED_CATEGORY_CODES.has(r.category_group_code)) {
-                    alert(BLOCKED_CATEGORY_MSG);
-                    return;
-                  }
                   setAddData({
                     ...EMPTY_DATA,
                     place: {
@@ -1234,19 +1228,13 @@ function PlaceSearch({ selected, onSelect }) {
             <button
               key={r.id}
               style={s.placeResultItem}
-              onClick={() => {
-                if (r.category_group_code && !ALLOWED_CATEGORY_CODES.has(r.category_group_code)) {
-                  alert(BLOCKED_CATEGORY_MSG);
-                  return;
-                }
-                onSelect({
-                  name: r.place_name,
-                  lat: parseFloat(r.y),
-                  lng: parseFloat(r.x),
-                  address: r.road_address_name || r.address_name,
-                  category: r.category_group_name || '기타',
-                });
-              }}
+              onClick={() => onSelect({
+                name: r.place_name,
+                lat: parseFloat(r.y),
+                lng: parseFloat(r.x),
+                address: r.road_address_name || r.address_name,
+                category: r.category_group_name || '기타',
+              })}
             >
               <div style={s.placeResultName}>{r.place_name}</div>
               <div style={s.placeResultAddr}>{r.road_address_name || r.address_name}</div>
