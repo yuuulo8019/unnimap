@@ -152,16 +152,12 @@ export default function UnniMapMobile() {
     return matchFilter && matchSearch;
   });
 
-  const INDOOR = ["매장내부", "매장외부"];
-
   const getNextStep = (step, data) => {
-    if (step === 1 && data.gender === "공용") return 3;          // 공용 → 칸수 스킵
-    if (step === 3 && INDOOR.includes(data.location)) return 5;  // 실내 → 접근방법 스킵
+    if (step === 1 && data.gender === "공용") return 3;  // 공용 → 칸수(2) 스킵
     return step + 1;
   };
   const getPrevStep = (step, data) => {
-    if (step === 3 && data.gender === "공용") return 1;          // 공용 뒤로 → 칸수 스킵
-    if (step === 5 && INDOOR.includes(data.location)) return 3;  // 실내 뒤로 → 접근방법 스킵
+    if (step === 3 && data.gender === "공용") return 1;  // 공용 뒤로 → 칸수(2) 스킵
     return step - 1;
   };
 
@@ -941,11 +937,9 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot, onMapClick, con
 
 function AddScreen({ step, data, setData, onNext, onBack }) {
   const isPublic = data.gender === "공용";
-  const isIndoor = ["매장내부", "매장외부"].includes(data.location);
-  const totalSteps = 8 - (isPublic ? 1 : 0) - (isIndoor ? 1 : 0);
+  const totalSteps = 8 - (isPublic ? 1 : 0);
   let displayStep = step;
   if (isPublic && step >= 3) displayStep -= 1;
-  if (isIndoor && step >= 5) displayStep -= 1;
 
   const stepConfig = [
     { title: "어디 화장실이야?", sub: "장소를 검색해서 선택해줘", key: "place", isPlaceSearch: true },
@@ -957,16 +951,16 @@ function AddScreen({ step, data, setData, onNext, onBack }) {
       { value: "한칸",   label: "🚪 한 칸",    desc: "\"딱 하나뿐이야\"" },
       { value: "여러칸", label: "🚻 여러 칸",  desc: "\"여유 있어\"" },
     ], key: "stalls" },
+    { title: "어떻게 들어가?", sub: "", options: [
+      { value: "개방",     label: "🆓 개방",     desc: "\"그냥 들어가면 돼\"" },
+      { value: "비밀번호", label: "🔐 비밀번호", desc: "\"비번 알아야 해\"" },
+      { value: "열쇠",     label: "🔑 열쇠",     desc: "\"열쇠 받아야 해\"" },
+    ], key: "access" },
     { title: "어디 있어?", sub: "", options: [
       { value: "매장내부", label: "🏪 매장 내부", desc: "\"매장 안에 있어\"" },
       { value: "매장외부", label: "🚪 매장 외부", desc: "\"매장 밖, 같은 건물이야\"" },
       { value: "건물외부", label: "🌳 건물 외부", desc: "\"건물 밖에 있어\"" },
     ], key: "location" },
-    { title: "어떻게 들어가?", sub: "건물 외부 화장실 기준이에요", options: [
-      { value: "개방",     label: "🆓 개방",     desc: "\"그냥 들어가면 돼\"" },
-      { value: "비밀번호", label: "🔐 비밀번호", desc: "\"비번 알아야 해\"" },
-      { value: "열쇠",     label: "🔑 열쇠",     desc: "\"열쇠 받아야 해\"" },
-    ], key: "access" },
     { title: "뭐가 있었어?", sub: "있는 거 다 골라줘! 없어도 OK", key: "extras", isMulti: true },
     { title: "솔직히 어땠어?", sub: "", options: CLEAN_LEVELS.map(l => ({ value: l.key, label: l.key, desc: l.caption })), key: "clean", isCleanSlider: true },
     { title: "그래서 언니, 한 마디로?", sub: "", options: [
