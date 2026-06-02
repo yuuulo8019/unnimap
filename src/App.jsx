@@ -6,12 +6,14 @@ import { supabase } from './supabase.js';
 // ─────────────────────────────────────────────
 
 const CLEAN_LEVELS = [
-  { key: "깨", caption: "완전 '깨'끗 ✨" },
-  { key: "애", caption: "깨'애'끗한걸? 👌" },
-  { key: "에", caption: "그냥 깨'에'끗 🤏" },
-  { key: "끄", caption: "여긴 깨'끄'... 😬" },
-  { key: "읏", caption: "'읏'... 언니들... 🫠" },
+  { key: "best",  label: "꽤", caption: "완전 '꽤'끗 ✨" },
+  { key: "good",  label: "깨", caption: "역시 '깨'끗해 👍" },
+  { key: "mid",   label: "애", caption: "그냥 '애'매해 🤏" },
+  { key: "bad",   label: "끄", caption: "음... '끄'적끄적 😬" },
+  { key: "worst", label: "읏", caption: "'읏'... 언니들... 🫠" },
 ];
+// 기존 한글 key 하위 호환 매핑
+const LEGACY_CLEAN_MAP = { "깨": "best", "애": "good", "에": "mid", "끄": "bad", "읏": "worst" };
 
 const RATING_CONFIG = {
   best: { label: "언니 여기로 와! 💕",    short: "여기로 와!",    color: "#FF6B9D", bg: "#FFF0F5", emoji: "🌸", pinBg: "#FF6B9D" },
@@ -876,7 +878,8 @@ function BottomSheet({ spot, sheetState, setSheetState, onClose, onAddReview }) 
 }
 
 function CleanSlider({ value, color }) {
-  const idx = CLEAN_LEVELS.findIndex(l => l.key === value);
+  const normalized = LEGACY_CLEAN_MAP[value] || value;
+  const idx = CLEAN_LEVELS.findIndex(l => l.key === normalized);
   const cur = CLEAN_LEVELS[idx];
   if (idx < 0) return null;
 
@@ -896,7 +899,7 @@ function CleanSlider({ value, color }) {
                 <span style={{
                   ...s.cleanDotChar,
                   color: isActive ? "#fff" : "#CCB7C2",
-                }}>{lvl.key}</span>
+                }}>{lvl.label}</span>
               </div>
             </div>
           );
@@ -1082,7 +1085,7 @@ function AddScreen({ step, data, setData, onNext, onBack }) {
       { value: "건물외부", label: "🌳 건물 외부", desc: "\"건물 밖에 있어\"" },
     ], key: "location" },
     { title: "뭐가 있었어?", sub: "있는 거 다 골라줘! 없어도 OK", key: "extras", isMulti: true },
-    { title: "솔직히 어땠어?", sub: "", options: CLEAN_LEVELS.map(l => ({ value: l.key, label: l.key, desc: l.caption })), key: "clean", isCleanSlider: true },
+    { title: "솔직히 어땠어?", sub: "", options: CLEAN_LEVELS.map(l => ({ value: l.key, label: l.label, desc: l.caption })), key: "clean", isCleanSlider: true },
     { title: "그래서 언니, 한 마디로?", sub: "", options: [
       { value: "best", label: "💕 언니 여기로 와!",    desc: "\"강추! 무조건 여기\"" },
       { value: "good", label: "👌 언니 써도 돼",       desc: "\"믿고 써도 OK\"" },
@@ -1182,13 +1185,23 @@ function AddScreen({ step, data, setData, onNext, onBack }) {
 }
 
 function CleanSliderPicker({ value, onChange }) {
-  const idx = CLEAN_LEVELS.findIndex(l => l.key === value);
+  const normalized = LEGACY_CLEAN_MAP[value] || value;
+  const idx = CLEAN_LEVELS.findIndex(l => l.key === normalized);
   const cur = CLEAN_LEVELS[idx];
 
   return (
     <div style={s.cleanPicker}>
       <div style={s.cleanPickerCaption}>
-        {cur ? cur.caption : "어디쯤이야?"}
+        {cur ? cur.caption : (
+          <>
+            <div style={{ fontSize: 12, color: "#999", marginBottom: 4 }}>
+              깨끗할수록 왼쪽, 더러울수록 오른쪽
+            </div>
+            <div style={{ fontSize: 13, color: "#FF6B9D", fontWeight: 600 }}>
+              거기 화장실, 언니 기준으로 꽤끗했어? 읏이었어?
+            </div>
+          </>
+        )}
       </div>
       <div style={s.cleanPickerTrack}>
         <div style={s.cleanPickerLine} />
@@ -1204,7 +1217,7 @@ function CleanSliderPicker({ value, onChange }) {
               onClick={() => onChange(lvl.key)}
             >
               <span style={isActive ? s.cleanPickerCharActive : s.cleanPickerChar}>
-                {lvl.key}
+                {lvl.label}
               </span>
             </button>
           );
