@@ -275,7 +275,7 @@ export default function UnniMapMobile() {
       .filter(s => s.lat && s.lng)
       .map(s => ({ s, d: metersBetween({ lat, lng }, { lat: s.lat, lng: s.lng }) }))
       .sort((a, b) => a.d - b.d)[0];
-    if (nearest && nearest.d < 100) {
+    if (nearest && nearest.d < 25) {
       selectSpot(nearest.s);
     } else {
       // 여러 카테고리를 병렬 검색해서 클릭 위치 근처 실제 POI 이름 조회
