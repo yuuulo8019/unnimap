@@ -1192,15 +1192,16 @@ function CleanSliderPicker({ value, onChange }) {
   return (
     <div style={s.cleanPicker}>
       <div style={s.cleanPickerCaption}>
-        {cur ? cur.caption : (
-          <>
-            <div style={{ fontSize: 12, color: "#999", marginBottom: 4 }}>
-              깨끗할수록 왼쪽, 더러울수록 오른쪽
-            </div>
-            <div style={{ fontSize: 13, color: "#FF6B9D", fontWeight: 600 }}>
-              거기 화장실, 언니 기준으로 꽤끗했어? 읏이었어?
-            </div>
-          </>
+        <div style={{ fontSize: 12, color: "#999", marginBottom: 4 }}>
+          깨끗할수록 왼쪽, 더러울수록 오른쪽
+        </div>
+        <div style={{ fontSize: 13, color: "#FF6B9D", fontWeight: 600, marginBottom: cur ? 6 : 0 }}>
+          거기 화장실, 언니 기준으로 꽤끗했어? 읏이었어?
+        </div>
+        {cur && (
+          <div style={{ fontSize: 15, color: "#FF6B9D", fontWeight: 800 }}>
+            {cur.caption}
+          </div>
         )}
       </div>
       <div style={s.cleanPickerTrack}>
