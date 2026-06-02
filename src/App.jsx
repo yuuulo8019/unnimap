@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from './supabase.js';
+import OnboardingSlides from './components/OnboardingSlides.jsx';
+import SuccessModal from './components/SuccessModal.jsx';
 
 // ─────────────────────────────────────────────
 // CONFIG
@@ -63,6 +65,10 @@ const EMPTY_DATA = { place: null, gender: "", stalls: "", access: "", location: 
 export default function UnniMapMobile() {
   const [showSplash, setShowSplash] = useState(true);
   const [splashVisible, setSplashVisible] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => localStorage.getItem("unnimap_onboarding_seen") !== "true"
+  );
+  const [showSuccess, setShowSuccess] = useState(false);
   const [showLocationAsk, setShowLocationAsk] = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [sheetState, setSheetState] = useState("collapsed");
@@ -238,9 +244,10 @@ export default function UnniMapMobile() {
       // 등록/재평가 후 전체 spots 새로 불러오기 (중복 제거 포함)
       await loadSpots();
 
-      setView("done");
+      setView("map");
       setAddStep(0);
       setAddData(EMPTY_DATA);
+      setShowSuccess(true);
       return;
     }
     setAddStep(getNextStep(addStep, addData));
@@ -385,6 +392,9 @@ export default function UnniMapMobile() {
 
   return (
     <div style={s.app}>
+      {showOnboarding && <OnboardingSlides onClose={() => setShowOnboarding(false)} />}
+      {showSuccess && <SuccessModal onClose={() => { setShowSuccess(false); }} />}
+
       {/* 마스터 로그인 (비공개) */}
       {showMasterLogin && (
         <div style={s.masterOverlay} onClick={() => { setShowMasterLogin(false); setMasterPw(''); }}>
