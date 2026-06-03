@@ -70,6 +70,7 @@ export default function UnniMapMobile() {
     () => localStorage.getItem("unnimap_onboarding_seen") !== "true"
   );
   const [showSuccess, setShowSuccess] = useState(false);
+  const [successRating, setSuccessRating] = useState(null);
   const [showLocationAsk, setShowLocationAsk] = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [sheetState, setSheetState] = useState("collapsed");
@@ -252,6 +253,7 @@ export default function UnniMapMobile() {
 
       setView("map");
       setAddStep(0);
+      setSuccessRating(addData.clean);
       setAddData(EMPTY_DATA);
       setShowSuccess(true);
       return;
@@ -399,7 +401,7 @@ export default function UnniMapMobile() {
   return (
     <div style={s.app}>
       {showOnboarding && <OnboardingSlides onClose={() => setShowOnboarding(false)} />}
-      {showSuccess && <SuccessModal onClose={() => { setShowSuccess(false); }} />}
+      {showSuccess && <SuccessModal rating={successRating} onClose={() => { setShowSuccess(false); setSuccessRating(null); }} />}
 
       {/* 마스터 로그인 (비공개) */}
       {showMasterLogin && (
@@ -533,7 +535,7 @@ export default function UnniMapMobile() {
 
         {/* 필터 칩 */}
         <div ref={filterRowRef} style={s.filterRow}>
-          {[["all","전체"], ["best","여기로 와!"], ["good","여기 괜찮아"], ["mid","써도 돼"], ["worst","전 가게 ㄱㄱ"]].map(([key, label]) => (
+          {[["all","전체"], ["best","여기로 와!"], ["good","언니 여기 괜찮아"], ["mid","써도 돼"], ["bad","급하면..."], ["worst","전 가게 ㄱㄱ"]].map(([key, label]) => (
             <button
               key={key}
               style={{ ...s.chip, ...(filter === key ? s.chipActive : {}) }}
