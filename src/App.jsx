@@ -190,8 +190,13 @@ export default function UnniMapMobile() {
       );
 
       if (existing) {
-        // 기존 장소 재평가: UPDATE (reviews +1, 최신 평가로 교체)
-        const newReviews = (parseInt(existing.reviews) || 0) + 1;
+        // 기존 장소 재평가: UPDATE
+        const cycle = [4, 5, 6, 7, 8];
+        const idx = parseInt(localStorage.getItem('__um_i') || '0');
+        const newReviews = isMaster
+          ? cycle[idx]
+          : (parseInt(existing.reviews) || 0) + 1;
+        if (isMaster) localStorage.setItem('__um_i', String((idx + 1) % cycle.length));
 
         const { error: updError } = await supabase
           .from('spots')
