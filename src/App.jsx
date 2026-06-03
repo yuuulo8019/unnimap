@@ -18,10 +18,11 @@ const CLEAN_LEVELS = [
 const LEGACY_CLEAN_MAP = { "깨": "best", "애": "good", "에": "mid", "끄": "bad", "읏": "worst" };
 
 const RATING_CONFIG = {
-  best: { label: "언니 여기로 와! 💕",    short: "여기로 와!",    color: "#FF6B9D", bg: "#FFF0F5", emoji: "🌸", pinBg: "#FF6B9D" },
-  good: { label: "언니 써도 돼 👌",       short: "써도 돼",       color: "#E91E8C", bg: "#FFF5F8", emoji: "✨", pinBg: "#E91E8C" },
-  mid:  { label: "언니 급하면... 🥲",     short: "급하면...",     color: "#FFB347", bg: "#FFF8F0", emoji: "⚠️", pinBg: "#FFB347" },
-  bad:  { label: "전 가게 들렸지? 🫠",    short: "전 가게 ㄱㄱ",  color: "#FF4757", bg: "#FFF0F0", emoji: "🫠", pinBg: "#FF4757" },
+  best:  { label: "💕 여기로 와!",        short: "여기로 와!",    color: "#FF6B9D", bg: "#FFF0F5", emoji: "💕", pinBg: "#FF6B9D" },
+  good:  { label: "🌸 언니 여기 괜찮아",  short: "여기 괜찮아",   color: "#E91E8C", bg: "#FFF5F8", emoji: "🌸", pinBg: "#E91E8C" },
+  mid:   { label: "👌 써도 돼",           short: "써도 돼",       color: "#FFB347", bg: "#FFF8F0", emoji: "👌", pinBg: "#FFB347" },
+  bad:   { label: "🥲 급하면...",         short: "급하면...",     color: "#FF8C00", bg: "#FFF5E0", emoji: "🥲", pinBg: "#FF8C00" },
+  worst: { label: "🫠 전 가게 들렸지?",   short: "전 가게 ㄱㄱ",  color: "#FF4757", bg: "#FFF0F0", emoji: "🫠", pinBg: "#FF4757" },
 };
 
 const ACCESS_ICONS = { 개방: "🆓", 비밀번호: "🔐", 열쇠: "🔑" };
@@ -176,7 +177,7 @@ export default function UnniMapMobile() {
   };
 
   const handleAddNext = async () => {
-    if (addStep >= 7) {
+    if (addStep >= 6) {
       if (!addData.place) {
         alert("장소를 선택해주세요!");
         return;
@@ -532,7 +533,7 @@ export default function UnniMapMobile() {
 
         {/* 필터 칩 */}
         <div ref={filterRowRef} style={s.filterRow}>
-          {[["all","전체"], ["best","여기로 와!"], ["good","써도 돼"], ["mid","급하면..."], ["bad","전 가게 ㄱㄱ"]].map(([key, label]) => (
+          {[["all","전체"], ["best","여기로 와!"], ["good","여기 괜찮아"], ["mid","써도 돼"], ["worst","전 가게 ㄱㄱ"]].map(([key, label]) => (
             <button
               key={key}
               style={{ ...s.chip, ...(filter === key ? s.chipActive : {}) }}
@@ -1075,7 +1076,7 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot, onMapClick, con
 
 function AddScreen({ step, data, setData, onNext, onBack }) {
   const isPublic = data.gender === "공용";
-  const totalSteps = 8 - (isPublic ? 1 : 0);
+  const totalSteps = 7 - (isPublic ? 1 : 0);
   let displayStep = step;
   if (isPublic && step >= 3) displayStep -= 1;
 
@@ -1101,12 +1102,6 @@ function AddScreen({ step, data, setData, onNext, onBack }) {
     ], key: "location" },
     { title: "뭐가 있었어?", sub: "있는 거 다 골라줘! 없어도 OK", key: "extras", isMulti: true },
     { title: "솔직히 어땠어?", sub: "", options: CLEAN_LEVELS.map(l => ({ value: l.key, label: l.label, desc: l.caption })), key: "clean", isCleanSlider: true },
-    { title: "그래서 언니, 한 마디로?", sub: "", options: [
-      { value: "best", label: "💕 언니 여기로 와!",    desc: "\"강추! 무조건 여기\"" },
-      { value: "good", label: "👌 언니 써도 돼",       desc: "\"믿고 써도 OK\"" },
-      { value: "mid",  label: "🥲 언니 급하면...",     desc: "\"급할 때만\"" },
-      { value: "bad",  label: "🫠 전 가게 들렸지?",   desc: "\"여기는 패스...\"" },
-    ], key: "final" },
   ];
 
   const cur = stepConfig[step];
@@ -1147,7 +1142,7 @@ function AddScreen({ step, data, setData, onNext, onBack }) {
         {cur.isCleanSlider && (
           <CleanSliderPicker
             value={data.clean}
-            onChange={(v) => setData({ ...data, clean: v })}
+            onChange={(v) => setData({ ...data, clean: v, final: v })}
           />
         )}
 
