@@ -288,42 +288,50 @@ export default function UnniMapMobile() {
 
   const handleMapClick = ({ lat, lng }) => {
     if (sheetState !== "collapsed") { setSelected(null); setSheetState("collapsed"); return; }
-    const nearest = spots
-      .filter(s => s.lat && s.lng)
-      .map(s => ({ s, d: metersBetween({ lat, lng }, { lat: s.lat, lng: s.lng }) }))
-      .sort((a, b) => a.d - b.d)[0];
-    if (nearest && nearest.d < 25) {
-      selectSpot(nearest.s);
-    } else {
-      // 여러 카테고리를 병렬 검색해서 클릭 위치 근처 실제 POI 이름 조회
-      // 결과 없으면 (도로/빈공간) → 무시
-      if (!window.kakao?.maps?.services) return;
-      const ps = new window.kakao.maps.services.Places();
-      const location = new window.kakao.maps.LatLng(lat, lng);
-      const opts = { location, radius: 40, size: 1, sort: window.kakao.maps.services.SortBy.DISTANCE };
-      const cats = ['FD6','CE7','CS2','MT1','HP8','BK9','AT4','PO3','SW8','CT1','AC5'];
-      let pending = cats.length;
-      let found = [];
 
-      cats.forEach(code => {
-        ps.categorySearch(code, (data, status) => {
-          if (status === window.kakao.maps.services.Status.OK && data.length > 0) {
-            found.push(data[0]);
+    // 항상 먼저 POI 탐색 → 이름 매칭 후 등록 spot 또는 noInfo 결정
+    if (!window.kakao?.maps?.services) return;
+    const ps = new window.kakao.maps.services.Places();
+    const location = new window.kakao.maps.LatLng(lat, lng);
+    const opts = { location, radius: 40, size: 1, sort: window.kakao.maps.services.SortBy.DISTANCE };
+    const cats = ['FD6','CE7','CS2','MT1','HP8','BK9','AT4','PO3','SW8','CT1','AC5'];
+    let pending = cats.length;
+    let found = [];
+
+    cats.forEach(code => {
+      ps.categorySearch(code, (data, status) => {
+        if (status === window.kakao.maps.services.Status.OK && data.length > 0) {
+          found.push(data[0]);
+        }
+        pending--;
+        if (pending === 0) {
+          // 가장 가까운 POI 선택
+          const best = found.length > 0
+            ? found.reduce((min, r) => {
+                const d = metersBetween({ lat, lng }, { lat: parseFloat(r.y), lng: parseFloat(r.x) });
+                return d < min.d ? { r, d } : min;
+              }, { d: Infinity, r: null })
+            : null;
+
+          const tappedName = best?.d <= 40 ? best.r.place_name : null;
+
+          // 30m 이내 등록 spot 찾기
+          const nearest = spots
+            .filter(s => s.lat && s.lng)
+            .map(s => ({ s, d: metersBetween({ lat, lng }, { lat: s.lat, lng: s.lng }) }))
+            .sort((a, b) => a.d - b.d)[0];
+
+          if (nearest && nearest.d < 30 && tappedName === nearest.s.name) {
+            // 이름까지 일치 → 등록 spot 열기
+            selectSpot(nearest.s);
+          } else if (tappedName) {
+            // 이름 불일치 or 등록 spot 없음 → 해당 POI의 noInfo 카드
+            setNoInfoPos({ lat: parseFloat(best.r.y), lng: parseFloat(best.r.x), name: tappedName });
           }
-          pending--;
-          if (pending === 0 && found.length > 0) {
-            // 가장 가까운 POI 선택
-            const best = found.reduce((min, r) => {
-              const d = metersBetween({ lat, lng }, { lat: parseFloat(r.y), lng: parseFloat(r.x) });
-              return d < min.d ? { r, d } : min;
-            }, { d: Infinity, r: null });
-            if (best.d <= 40 && best.r) {
-              setNoInfoPos({ lat: parseFloat(best.r.y), lng: parseFloat(best.r.x), name: best.r.place_name });
-            }
-          }
-        }, opts);
-      });
-    }
+          // tappedName 없으면 (도로/빈공간) → 무시
+        }
+      }, opts);
+    });
   };
 
   const handleInstall = async () => {
@@ -1041,7 +1049,6 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot, onMapClick, con
         'display:flex', 'align-items:center', 'justify-content:center',
         'cursor:pointer',
         `box-shadow:${isSelected ? `0 0 0 4px ${pinColor}44,0 4px 16px rgba(0,0,0,0.2)` : '0 3px 10px rgba(0,0,0,0.15)'}`,
-        'transform:translate(-50%,-50%)',
         'transition:all 0.2s',
       ].join(';');
       el.textContent = pinEmoji;
@@ -1053,6 +1060,8 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot, onMapClick, con
       const overlay = new window.kakao.maps.CustomOverlay({
         position: new window.kakao.maps.LatLng(spot.lat, spot.lng),
         content: el,
+        xAnchor: 0.5,
+        yAnchor: 0.5,
         zIndex: isSelected ? 10 : 1,
       });
       overlay.setMap(mapRef.current);
