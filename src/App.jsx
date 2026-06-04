@@ -1040,6 +1040,14 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot, onMapClick, con
       const isSelected = selected?.id === spot.id;
       const size = isSelected ? 48 : 38;
 
+      // 래퍼: 핀 아이콘 + 이름 레이블
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = [
+        'display:flex', 'flex-direction:column', 'align-items:center',
+        'cursor:pointer', 'gap:2px',
+      ].join(';');
+
+      // 핀 아이콘
       const el = document.createElement('div');
       el.style.cssText = [
         `width:${size}px`, `height:${size}px`,
@@ -1047,21 +1055,35 @@ function KakaoMap({ spots, userLocation, selected, onSelectSpot, onMapClick, con
         'border-radius:50%', 'border:3px solid #fff',
         `font-size:${isSelected ? 20 : 16}px`,
         'display:flex', 'align-items:center', 'justify-content:center',
-        'cursor:pointer',
         `box-shadow:${isSelected ? `0 0 0 4px ${pinColor}44,0 4px 16px rgba(0,0,0,0.2)` : '0 3px 10px rgba(0,0,0,0.15)'}`,
         'transition:all 0.2s',
       ].join(';');
       el.textContent = pinEmoji;
-      el.addEventListener('click', (e) => {
+
+      // 이름 레이블
+      const label = document.createElement('div');
+      label.style.cssText = [
+        'font-size:11px', 'font-weight:600', 'color:#333',
+        'background:rgba(255,255,255,0.85)', 'border-radius:4px',
+        'padding:2px 6px', 'max-width:80px',
+        'overflow:hidden', 'text-overflow:ellipsis', 'white-space:nowrap',
+        'box-shadow:0 1px 3px rgba(0,0,0,0.15)',
+        'font-family:inherit', 'line-height:1.4',
+      ].join(';');
+      label.textContent = spot.name;
+
+      wrapper.appendChild(el);
+      wrapper.appendChild(label);
+      wrapper.addEventListener('click', (e) => {
         e.stopPropagation();
         onSelectSpot(spot);
       });
 
       const overlay = new window.kakao.maps.CustomOverlay({
         position: new window.kakao.maps.LatLng(spot.lat, spot.lng),
-        content: el,
+        content: wrapper,
         xAnchor: 0.5,
-        yAnchor: 0.5,
+        yAnchor: 1.0,
         zIndex: isSelected ? 10 : 1,
       });
       overlay.setMap(mapRef.current);
